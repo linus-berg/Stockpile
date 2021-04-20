@@ -10,7 +10,7 @@ namespace CloneX {
 
     static async Task Run() {
       Nuget nuget = new("./out");
-      await nuget.Fetch("ClosedXML");
+      await nuget.Get("ClosedXML");
     }
   }
 }
