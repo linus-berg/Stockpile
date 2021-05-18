@@ -4,6 +4,9 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NuGet.Protocol" Version="5.9.1"/>
+    <PackageReference Include="Nuget.Packaging" Version="5.9.1" />
+    <PackageReference Include="NuGet.Protocol" Version="5.9.1" />
+    <PackageReference Include="NuGet.Versioning" Version="5.9.1" />
+    <PackageReference Include="RestSharp" Version="106.11.7" />
   </ItemGroup>
 </Project>
