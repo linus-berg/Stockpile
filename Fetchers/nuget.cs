@@ -67,8 +67,6 @@ class Nuget : BaseFetcher  {
       if (!this.seeding_) {
         File.Copy(f_path, this.GetDeltaPath(filename));
       }
-    } else {
-      Console.WriteLine($"{f_path} Not Part Of Delta!");
     }
   }
 } 

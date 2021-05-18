@@ -23,5 +23,9 @@ namespace CloneX.Fetchers {
       string full_path = Path.GetFullPath(this.delta_dir_);
       return Path.Combine(full_path, filename);
     }
+
+    protected void CopyToDelta(string filename) {
+      File.Copy(GetOutPath(filename), GetDeltaPath(filename)); 
+    }
   }
 }
