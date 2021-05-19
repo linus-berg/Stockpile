@@ -2,7 +2,8 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using RestSharp;
-
+using ShellProgressBar;
+using System;
 namespace CloneX.Fetchers {
 class Distribution {
   public string shasum {get; set;}
@@ -19,59 +20,62 @@ class Package {
 }
 
 public class Npm : BaseFetcher {
-  const string REGISTRY = "https://registry.npmjs.org/";
-  readonly RestClient client_ = new RestClient(REGISTRY);
-  private HashSet<string> found_;
-  private bool seeding_;
-  
-  public Npm(string out_dir, string delta_dir, bool seeding = false) : base(out_dir, delta_dir) {
-    this.found_ = new(); 
-    this.seeding_ = seeding;
+  public const string SYSTEM = "NPM";
+  private const string REGISTRY = "https://registry.npmjs.org/";
+  private readonly RestClient client_ = new RestClient(REGISTRY);
+  public Npm(string out_dir, string delta_dir, ProgressBar pb, bool seeding = false) : base(out_dir, delta_dir, pb, SYSTEM, seeding) {
   }
 
-
-  public async Task Get(string id) {
-    if (found_.Contains(id)) {
+  public override async Task Get(string id) {
+    depth_++;
+    Message(id, Status.CHECK);
+    Package package = await GetPackage(id);
+    this.Memorize(id);
+    if (package == null || package.versions == null) {
       return;
     }
-    Package package = await GetPackage(id);
-    found_.Add(id);
+    this.AddPkgCount(package.versions.Count);
     foreach(var kv in package.versions) {
       Manifest manifest = kv.Value;
       if (manifest.dist.tarball != null) {
-        GetTarball(manifest.dist.tarball);
+        try {
+          Message(id + "@" + kv.Key, Status.FETCH);
+          GetTarball(manifest.dist.tarball);
+          this.Tick();
+        } catch (Exception e) {
+          Write(e.ToString());
+        }
       }
       if (manifest.dependencies != null) {
         foreach(KeyValuePair<string, string> pkg in manifest.dependencies) {
-          await Get(pkg.Key);
+          if (!this.InMemory(pkg.Key)) {
+            await Get(pkg.Key);
+          }
         }
       }
     }
+    depth_--;
   }
   
   public void GetTarball(string url) {
-    string file_path = StripRegistry(url).Replace("/-/", "/");
-    string out_path = this.GetOutPath(file_path);
-    string delta_path = this.GetDeltaPath(file_path);
-    if (File.Exists(out_path)) {
+    string filename = StripRegistry(url).Replace("/-/", "/");
+    string out_file = this.GetOutPath(filename);
+    this.CreateFilePath(out_file);
+    if (OnDisk(out_file)) {
+      this.AddBytes(out_file);
       return;
-    } else {
-      Directory.CreateDirectory(Path.GetDirectoryName(out_path));
-      Directory.CreateDirectory(Path.GetDirectoryName(delta_path));
     }
-
     IRestRequest req = CreateRequest(url, DataFormat.None);
-    using var writer = File.OpenWrite(out_path);
+    using FileStream fs = File.OpenWrite(out_file);
     req.ResponseWriter = stream => {
       using (stream) {
-        stream.CopyTo(writer);
+        stream.CopyTo(fs);
       }
     };
     client_.DownloadData(req);
-    writer.Close();
-    if (!this.seeding_) {
-      this.CopyToDelta(file_path);
-    }
+    fs.Close();
+    this.AddBytes(out_file);
+    this.CopyToDelta(filename);
   }
   
   private string StripRegistry(string url) {
