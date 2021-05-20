@@ -1,1 +1,1 @@
-react
+create-react-class

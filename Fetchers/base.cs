@@ -15,11 +15,14 @@ namespace CloneX.Fetchers {
     private ChildProgressBar cb_;
     protected bool seeding_;
     private HashSet<string> found_;
-    private const string MSG_FMT_ = "{0,-6} - T/D={1:F2}/{2:F2}mb Packs={3}/{4, -5} Depth={5,-5} Status={6}";
+    private const string MSG_FMT_ = "{0,-6} - T/D={1:F2}/{2:F2}mb Packs={3}/{4, -5} V:{7, -5} Depth={5,-5} Status={6}";
     private readonly string system_;
     protected int depth_ = 0; 
     private long bytes_delta_ = 0;
     private long bytes_total_ = 0;
+    protected ParallelOptions po = new ParallelOptions {
+      MaxDegreeOfParallelism = 10
+    };
 
     protected enum Status {
       CHECK = 0,
@@ -57,6 +60,10 @@ namespace CloneX.Fetchers {
       this.cb_.WriteLine(msg);
     }
 
+    protected void WriteError(string msg) {
+      this.cb_.WriteErrorLine(msg);
+    }
+
     protected void Tick() {
       this.cb_.Tick();
     }
@@ -82,9 +89,10 @@ namespace CloneX.Fetchers {
         bytes_total_ / (1024.0 * 1024.0),
         bytes_delta_ / (1024.0 * 1024.0),
         this.cb_.CurrentTick,
-        pkg_count_, 
+        pkg_count_,
         depth_,
-        status_msg
+        status_msg,
+        found_.Count
       );
     }
 
@@ -123,8 +131,12 @@ namespace CloneX.Fetchers {
       return this.found_.Contains(id);
     }
     
-    protected bool Memorize(string id) {
-      return this.found_.Add(id);
+    protected void Memorize(string id) {
+      this.found_.Add(id); 
+    }
+
+    protected HashSet<string> GetMemory() {
+      return this.found_;
     }
 
     protected bool OnDisk(string path) {

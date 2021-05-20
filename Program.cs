@@ -12,6 +12,7 @@ namespace CloneX {
     
     const string NUGET_ID = "NUGET";
     const string NPM_ID = "NPM";
+    const bool STAGING = true;
     
     static string RUNTIME = DateTime.UtcNow.ToString("yyyyMMddHHmmssff");
     static ProgressBarOptions p_opt = new ProgressBarOptions {
@@ -23,7 +24,11 @@ namespace CloneX {
       Console.WriteLine("Getting Nuget and NPM packages!");
       CreateTypeDirs(NPM_ID);
       CreateTypeDirs(NUGET_ID);
-      GetPackages();
+      try {
+        GetPackages();
+      } catch (Exception e) {
+        Console.WriteLine(e.ToString());
+      }
       return 0;
     }
     
@@ -49,7 +54,7 @@ namespace CloneX {
 
     static void GetPackages() {
       using ProgressBar main_bar = new ProgressBar(0,"", p_opt);
-      Task[] tasks = new Task[2];
+      Task[] tasks = new Task[1];
       tasks[0] = GetNuGetPackages("./NUGET.txt", main_bar);
       tasks[1] = GetNpmPackages("./NPM.txt", main_bar);
       Task.WaitAll(tasks);
@@ -62,7 +67,7 @@ namespace CloneX {
     static async Task GetNuGetPackages(string filename, ProgressBar bar) {
       string[] pkg_list = GetPackageList(filename);
       int pkg_count = pkg_list.Length;
-      Nuget nuget = new(GetOutDir(NUGET_ID), GetDeltaDir(NUGET_ID), bar);
+      Nuget nuget = new(GetOutDir(NUGET_ID), GetDeltaDir(NUGET_ID), bar, STAGING);
       foreach(string line in pkg_list) {
         await nuget.Get(line);
       }
@@ -70,9 +75,10 @@ namespace CloneX {
     static async Task GetNpmPackages(string filename, ProgressBar bar) {
       string[] pkg_list = GetPackageList(filename);
       int pkg_count = pkg_list.Length;
-      CloneX.Fetchers.Npm npm = new(GetOutDir(NPM_ID), GetDeltaDir(NPM_ID), bar);
+      CloneX.Fetchers.Npm npm = new(GetOutDir(NPM_ID), GetDeltaDir(NPM_ID), bar, STAGING);
       foreach(string line in pkg_list) {
         await npm.Get(line);
+        npm.ProcessAllTarballs();
       }
     }
   }
