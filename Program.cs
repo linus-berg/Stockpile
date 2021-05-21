@@ -5,15 +5,13 @@ using System.Threading.Tasks;
 
 namespace CloneX {
   class Program {
-
     const string DELTA_DIR = "./DELTA/{0}/{1}/";
     const string OUT_DIR = "./PACKAGES/{0}/";
-    
     const string NUGET_ID = "NUGET";
     const string NPM_ID = "NPM";
+    const string DATE_FMT = "yyyyMMddHHmmssff"; 
     const bool STAGING = true;
-    
-    static string RUNTIME = DateTime.UtcNow.ToString("yyyyMMddHHmmssff");
+    static readonly DateTime RUNTIME = DateTime.UtcNow;
     static int Main(string[] args) {
       Console.WriteLine("Getting Nuget and NPM packages!");
       CreateTypeDirs(NPM_ID);
@@ -36,9 +34,8 @@ namespace CloneX {
     }
 
     static string GetDeltaDir(string type) {
-      return string.Format(DELTA_DIR, type, RUNTIME);
+      return string.Format(DELTA_DIR, type, RUNTIME.ToString(DATE_FMT));
     }
-
 
     static void CreateDir(string directory) {
       if (!Directory.Exists(directory)) {
@@ -60,7 +57,7 @@ namespace CloneX {
     static void GetNuGetPackages(string filename) {
       string[] pkg_list = GetPackageList(filename);
       int pkg_count = pkg_list.Length;
-      Nuget nuget = new(GetOutDir(NUGET_ID), GetDeltaDir(NUGET_ID), STAGING);
+      Nuget nuget = new(GetOutDir(NUGET_ID), GetDeltaDir(NUGET_ID), RUNTIME, STAGING);
       foreach(string line in pkg_list) {
         nuget.Get(line);
         nuget.ProcessIds();
@@ -69,7 +66,7 @@ namespace CloneX {
     static void GetNpmPackages(string filename) {
       string[] pkg_list = GetPackageList(filename);
       int pkg_count = pkg_list.Length;
-      CloneX.Fetchers.Npm npm = new(GetOutDir(NPM_ID), GetDeltaDir(NPM_ID), STAGING);
+      CloneX.Fetchers.Npm npm = new(GetOutDir(NPM_ID), GetDeltaDir(NPM_ID), RUNTIME, STAGING);
       foreach(string line in pkg_list) {
         npm.Get(line);
         npm.ProcessIds();

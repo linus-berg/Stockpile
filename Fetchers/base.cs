@@ -22,8 +22,9 @@ namespace CloneX.Fetchers {
     };
     protected int depth_ = 0; 
     
-    private const string MSG_FMT_ = "{0,-6} - [T/D={1:F2}/{2:F2}mb] Packages:{4, -5} Versions:{3, -5} Depth={5,-5} {6}";
-    private readonly string system_;
+    private const string MSG_FMT_ = "{0}, {1,-6} - [T/D={2:F2}/{3:F2}mb] Packages:{4, -5} Versions:{5, -5} Depth={6,-5} {7}";
+    private readonly string SYSTEM_;
+    private readonly DateTime RUNTIME_;
     private int pkg_count_ = 0;
     private long bytes_delta_ = 0;
     private long bytes_total_ = 0;
@@ -36,13 +37,15 @@ namespace CloneX.Fetchers {
       string out_dir, 
       string delta_dir,
       string system,
+      DateTime runtime,
       bool seeding = false) {
+      this.RUNTIME_ = runtime;
       this.out_dir_ = out_dir;
       this.delta_dir_ = delta_dir;
       this.seeding_ = seeding;
       this.found_ = new();
       this.error_ = new();
-      this.system_ = system;
+      this.SYSTEM_ = system;
     }
 
     protected void AddPkgCount(int c) {
@@ -73,11 +76,12 @@ namespace CloneX.Fetchers {
       };
       string msg = string.Format(
         MSG_FMT_,
-        system_,
+        RUNTIME_,
+        SYSTEM_,
         bytes_total_ / (1024.0 * 1024.0),
         bytes_delta_ / (1024.0 * 1024.0),
-        pkg_count_,
         found_.Count,
+        pkg_count_,
         depth_,
         status_msg
       );

@@ -26,7 +26,7 @@ public class Npm : BaseFetcher {
   private readonly RestClient client_ = new RestClient(REGISTRY);
 
   public Npm(string out_dir, string delta_dir,
-             bool seeding = false) : base(out_dir, delta_dir, SYSTEM, seeding) {
+             DateTime runtime, bool seeding = false) : base(out_dir, delta_dir, SYSTEM, runtime, seeding) {
   }
 
   public override void Get(string id) {
