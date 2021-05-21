@@ -1,8 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Threading.Tasks;
 using CloneX.Fetchers;
-using ShellProgressBar;
+using System.Threading.Tasks;
 
 namespace CloneX {
   class Program {
@@ -15,11 +14,6 @@ namespace CloneX {
     const bool STAGING = true;
     
     static string RUNTIME = DateTime.UtcNow.ToString("yyyyMMddHHmmssff");
-    static ProgressBarOptions p_opt = new ProgressBarOptions {
-      ProgressCharacter = '-',
-      DisplayTimeInRealTime = false
-    };
-
     static int Main(string[] args) {
       Console.WriteLine("Getting Nuget and NPM packages!");
       CreateTypeDirs(NPM_ID);
@@ -53,10 +47,9 @@ namespace CloneX {
     }
 
     static void GetPackages() {
-      using ProgressBar main_bar = new ProgressBar(0,"", p_opt);
-      Task[] tasks = new Task[1];
-      tasks[0] = GetNuGetPackages("./NUGET.txt", main_bar);
-      tasks[1] = GetNpmPackages("./NPM.txt", main_bar);
+      Task[] tasks = new Task[2];
+      tasks[0] = Task.Run(() => GetNuGetPackages("./NUGET.txt"));
+      tasks[1] = Task.Run(() => GetNpmPackages("./NPM.txt"));
       Task.WaitAll(tasks);
     }
 
@@ -64,21 +57,22 @@ namespace CloneX {
       return File.ReadAllLines(filename);
     }
 
-    static async Task GetNuGetPackages(string filename, ProgressBar bar) {
+    static void GetNuGetPackages(string filename) {
       string[] pkg_list = GetPackageList(filename);
       int pkg_count = pkg_list.Length;
-      Nuget nuget = new(GetOutDir(NUGET_ID), GetDeltaDir(NUGET_ID), bar, STAGING);
+      Nuget nuget = new(GetOutDir(NUGET_ID), GetDeltaDir(NUGET_ID), STAGING);
       foreach(string line in pkg_list) {
-        await nuget.Get(line);
+        nuget.Get(line);
+        nuget.ProcessIds();
       }
     }
-    static async Task GetNpmPackages(string filename, ProgressBar bar) {
+    static void GetNpmPackages(string filename) {
       string[] pkg_list = GetPackageList(filename);
       int pkg_count = pkg_list.Length;
-      CloneX.Fetchers.Npm npm = new(GetOutDir(NPM_ID), GetDeltaDir(NPM_ID), bar, STAGING);
+      CloneX.Fetchers.Npm npm = new(GetOutDir(NPM_ID), GetDeltaDir(NPM_ID), STAGING);
       foreach(string line in pkg_list) {
-        await npm.Get(line);
-        npm.ProcessAllTarballs();
+        npm.Get(line);
+        npm.ProcessIds();
       }
     }
   }

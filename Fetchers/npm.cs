@@ -2,14 +2,10 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using RestSharp;
-using ShellProgressBar;
 using System;
+
 namespace CloneX.Fetchers {
 
-class Tarball {
-  public string id {get; set;}
-  public string url {get; set;}
-}
 class Distribution {
   public string shasum {get; set;}
   public string tarball { get; set;}
@@ -28,98 +24,116 @@ public class Npm : BaseFetcher {
   public const string SYSTEM = "NPM";
   private const string REGISTRY = "https://registry.npmjs.org/";
   private readonly RestClient client_ = new RestClient(REGISTRY);
-  private List<Tarball> tarballs_;
 
   public Npm(string out_dir, string delta_dir,
-             ProgressBar pb, bool seeding = false) : base(out_dir, delta_dir,
-                                                          pb, SYSTEM, seeding) {
-    this.tarballs_ = new List<Tarball>();
+             bool seeding = false) : base(out_dir, delta_dir, SYSTEM, seeding) {
   }
 
-  public override async Task Get(string id) {
+  public override void Get(string id) {
     depth_++;
-    Message(id, Status.CHECK);
-    Package package = await GetPackage(id);
+    SetStatus(id, Status.CHECK);
+    Package pkg = GetPackage(id);
+    /* Memorize to never visit this node again */
     this.Memorize(id);
-    if (package == null) {
-      WriteError($"{id} package metadata is null!");
-      return;
+    if (pkg == null || pkg.versions == null) {
+      SetStatus(id, Status.ERROR);
+      this.SetError(id);
+    } else {
+      AddTransient(id, pkg);
     }
-    await AddVersions(id, package);
     depth_--;
   }
 
-  private async Task AddVersions(string id, Package package) {
-    if (package.versions == null) {
-      WriteError($"{id} package versions is null!");
-      return;
-    }
-    /* For each version, add each version dependency (if not prev found)! */
-    this.AddPkgCount(package.versions.Count);
-    foreach(var kv in package.versions) {
+  private void AddTransient(string id, Package pkg) {
+    /* For each version, add each versions dependencies! */
+    this.AddPkgCount(pkg.versions.Count);
+    foreach(var kv in pkg.versions) {
       Manifest manifest = kv.Value;
-      if (manifest.dist.tarball != null) {
-        this.tarballs_.Add(new Tarball {
-          id = id,
-          url = manifest.dist.tarball
-        });
-      }
       if (manifest.dependencies == null) {
         continue;
       }
-      foreach(KeyValuePair<string, string> pkg in manifest.dependencies) {
-        if (!this.InMemory(pkg.Key)) {
-          await Get(pkg.Key);
+      SetStatus($"{id}@{kv.Key} ({manifest.dependencies.Count})", Status.PARSE);
+      foreach(KeyValuePair<string, string> p in manifest.dependencies) {
+        if (!this.InMemory(p.Key)) {
+          Get(p.Key);
         }
       }
     }
   }
   
-  public void ProcessAllTarballs() {
-    Parallel.ForEach(this.tarballs_, po, (ball) => {
+  public void ProcessIds() {
+    /* Parallel, max 5 concurrent fetchers */
+    Parallel.ForEach(this.GetMemory(), po, (id) => {
       try {
-        Message(ball.url, Status.FETCH);
-        GetTarball(ball);
-        this.Tick();
-      } catch (Exception e) {
-        WriteError(e.ToString());
+        if (this.IsValid(id)) {
+          ProcessVersions(id);
+        }
+      } catch (Exception) {
+        // Processing error for {id}, for now ignore.
       }
     });
-    this.tarballs_.Clear();
-  }
-  
-  private void GetTarball(Tarball ball) {
-    string filename = StripRegistry(ball.url).Replace("/-/", "/");
-    string out_file = this.GetOutPath(filename);
-    this.CreateFilePath(out_file);
-    if (OnDisk(out_file)) {
-      this.AddBytes(out_file);
-      return;
-    }
-    IRestRequest req = CreateRequest(ball.url, DataFormat.None);
-    using FileStream fs = File.OpenWrite(out_file);
-    req.ResponseWriter = stream => {
-      using (stream) {
-        stream.CopyTo(fs);
-      }
-    };
-    client_.DownloadData(req);
-    fs.Close();
-    this.AddBytes(out_file);
-    this.CopyToDelta(filename);
-  }
-  
-  private string StripRegistry(string url) {
-    return url.Replace(REGISTRY, "");
   }
 
-  private async Task<Package> GetPackage(string id) {
+  private void ProcessVersions(string id) {
+    Package pkg = GetPackage(id);
+    if (pkg == null || pkg.versions == null) {
+      throw new ApplicationException($"{id} versions is null."); 
+    }
+    foreach(KeyValuePair<string, Manifest> kv in pkg.versions) {
+      SetStatus($"{id}@{kv.Key}", Status.FETCH);
+      TryGetTarball(id, kv.Value);
+    }
+  }
+
+  private void TryGetTarball(string id, Manifest manifest) {
     try {
-      return await client_.GetAsync<Package>(CreateRequest($"{id}/")); 
-    } catch (Exception e) {
-      WriteError(e.ToString());
+      if (manifest.dist.tarball == null) {
+        throw new ArgumentNullException($"{id} tarball is null.");
+      }
+      this.GetTarball(manifest.dist.tarball);
+    } catch (Exception) {
+      // ignore
+    }
+  }
+  
+  private void GetTarball(string url) {
+    string out_fp = this.GetOutFilePath(StripRegistry(url).Replace("/-/", "/"));
+    this.CreateFilePath(out_fp);
+    /* If not on disk and the download succeeded */
+    if (!OnDisk(out_fp) && Download(url, out_fp)) {
+      this.CopyToDelta(out_fp);
+    }
+    this.AddBytes(out_fp);
+  }
+
+  private bool Download(string url, string out_fp) {
+    try {
+      using FileStream fs = File.OpenWrite(out_fp);
+      IRestRequest req = CreateRequest(url, DataFormat.None);
+      req.ResponseWriter = stream => {
+        using (stream) {
+          stream.CopyTo(fs);
+        }
+      };
+      client_.DownloadData(req);
+      fs.Close();
+    } catch (Exception) {
+      return false;
+    }
+    return true;
+  }
+  
+
+  private Package GetPackage(string id) {
+    try {
+      return client_.Get<Package>(CreateRequest($"{id}/")).Data; 
+    } catch (Exception) {
       return null;
     }
+  }
+
+  private string StripRegistry(string url) {
+    return url.Replace(REGISTRY, "");
   }
 
   private IRestRequest CreateRequest(string url, DataFormat fmt = DataFormat.Json) {
