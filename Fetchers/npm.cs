@@ -21,6 +21,12 @@ class Package {
 }
 
 public class Npm : BaseFetcher {
+  private static readonly string[] VERSION_OUTLAWS = new string[] {
+    "alpha",
+    "beta",
+    "nightly",
+    "dev"
+  };
   public const string SYSTEM = "NPM";
   private const string REGISTRY = "https://registry.npmjs.org/";
   private readonly RestClient client_ = new RestClient(REGISTRY);
@@ -94,14 +100,7 @@ public class Npm : BaseFetcher {
 
   private bool AvoidVersion(string id, string version) {
     string v_l = version.ToLower();
-    string[] v_outlaws = new string[]{
-      "alpha",
-      "beta",
-      "nightly",
-      "dev"
-    };
-
-    foreach(string outlaw in v_outlaws) {
+    foreach(string outlaw in VERSION_OUTLAWS) {
       if (v_l.Contains(outlaw)) {
         return true;
       }
