@@ -49,6 +49,10 @@ public class Npm : BaseFetcher {
     this.AddPkgCount(pkg.versions.Count);
     foreach(var kv in pkg.versions) {
       Manifest manifest = kv.Value;
+      if (AvoidVersion(id, kv.Key)) {
+        this.AddPkgCount(-1);
+        continue;
+      }
       if (manifest.dependencies == null) {
         continue;
       }
@@ -80,9 +84,40 @@ public class Npm : BaseFetcher {
       throw new ApplicationException($"{id} versions is null."); 
     }
     foreach(KeyValuePair<string, Manifest> kv in pkg.versions) {
+      if (AvoidVersion(id, kv.Key)) {
+        continue;
+      }
       SetStatus($"{id}@{kv.Key}", Status.FETCH);
       TryGetTarball(id, kv.Value);
     }
+  }
+
+  private bool AvoidVersion(string id, string version) {
+    string v_l = version.ToLower();
+    string[] v_outlaws = new string[]{
+      "alpha",
+      "beta",
+      "nightly",
+      "dev"
+    };
+
+    foreach(string outlaw in v_outlaws) {
+      if (v_l.Contains(outlaw)) {
+        return true;
+      }
+    }
+    return false;
+    /* Is package specific needed? (Probably not) */
+/*    KeyValuePair<string, string>[] ignores = new KeyValuePair<string, string>[] {
+      KeyValuePair.Create("google-closure-compiler", "nightly"),
+      KeyValuePair.Create("typescript", "dev"),
+      KeyValuePair.Create("@graphql-codegen", "alpha")
+    };
+    foreach(KeyValuePair<string, string> kv in ignores) {
+      if (id.Contains(kv.Key) && v_l.Contains(kv.Value)) {
+        return true;
+      }
+    }*/
   }
 
   private void TryGetTarball(string id, Manifest manifest) {
