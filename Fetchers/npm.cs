@@ -52,16 +52,12 @@ public class Npm : BaseFetcher {
 
   private void AddTransient(string id, Package pkg) {
     /* For each version, add each versions dependencies! */
-    this.AddPkgCount(pkg.versions.Count);
     foreach(var kv in pkg.versions) {
       Manifest manifest = kv.Value;
-      if (AvoidVersion(id, kv.Key)) {
-        this.AddPkgCount(-1);
+      if (AvoidVersion(id, kv.Key) || manifest.dependencies == null) {
         continue;
       }
-      if (manifest.dependencies == null) {
-        continue;
-      }
+      this.AddPkgCount(1);
       SetStatus($"{id}@{kv.Key} ({manifest.dependencies.Count})", Status.PARSE);
       foreach(KeyValuePair<string, string> p in manifest.dependencies) {
         if (!this.InMemory(p.Key)) {
