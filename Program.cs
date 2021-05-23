@@ -1,40 +1,56 @@
 ﻿using System;
 using System.IO;
-using CloneX.Fetchers;
+using Stockpile.Fetchers;
 using System.Threading.Tasks;
-
-namespace CloneX {
+using System.Text.Json;
+using System.Collections.Generic;
+namespace Stockpile {
   class Program {
-    const string DELTA_DIR = "./DELTA/{0}/{1}/";
-    const string OUT_DIR = "./PACKAGES/{0}/";
-    const string NUGET_ID = "NUGET";
-    const string NPM_ID = "NPM";
+    const string CFG_PATH = "./Config.json";
+    const string DELTA_DIR_NAME = "{0}{1}";
     const string DATE_FMT = "yyyyMMddHHmmssff"; 
     const bool STAGING = true;
     static readonly DateTime RUNTIME = DateTime.UtcNow;
     static int Main(string[] args) {
-      Console.WriteLine("Getting Nuget and NPM packages!");
-      CreateTypeDirs(NPM_ID);
-      CreateTypeDirs(NUGET_ID);
-      try {
-        GetPackages();
-      } catch (Exception e) {
-        Console.WriteLine(e.ToString());
+      if (!File.Exists(CFG_PATH)) {
+        Console.WriteLine("NO CONFIG FILE PROVIDED");
+        return 99;
       }
+      Console.WriteLine("Getting Nuget and NPM packages!");
+      List<BaseFetcher> fetchers = new List<BaseFetcher>();
+      Config.Main cfg = JsonSerializer.Deserialize<Config.Main>(File.ReadAllText(CFG_PATH));
+      List<Task> tasks = new List<Task>(); 
+      foreach(Config.Fetcher fetch_cfg in cfg.fetchers) {
+        BaseFetcher fetcher = GetFetcherType(fetch_cfg);
+        tasks.Add(Task.Run(() => {
+          try {
+            StartFetcher(fetcher, fetch_cfg);
+          } catch(Exception e) {
+            Console.WriteLine(e);
+          }
+        }));
+      }
+      Task.WaitAll(tasks.ToArray());
       return 0;
     }
-    
-    static void CreateTypeDirs(string type) {
-      CreateDir(GetOutDir(type));
-      CreateDir(GetDeltaDir(type));
-    }
-    
-    static string GetOutDir(string type) {
-      return string.Format(OUT_DIR, type);
-    }
 
-    static string GetDeltaDir(string type) {
-      return string.Format(DELTA_DIR, type, RUNTIME.ToString(DATE_FMT));
+    static BaseFetcher GetFetcherType(Config.Fetcher cfg) {
+      Config.Output output = cfg.output;
+      CreateTypeDirs(output.full, output.delta);
+      return cfg.type switch {
+        "npm" => new Npm(cfg, RUNTIME, STAGING),
+        "nuget" => new Nuget(cfg, RUNTIME, STAGING),
+        _ => throw new ArgumentException("type")
+      };
+    }
+    
+    static void CreateTypeDirs(string full, string delta) {
+      CreateDir(full);
+      CreateDir(GetDeltaDir(delta));
+    }
+    
+    static string GetDeltaDir(string dir) {
+      return dir + RUNTIME.ToString(DATE_FMT);
     }
 
     static void CreateDir(string directory) {
@@ -43,33 +59,16 @@ namespace CloneX {
       }
     }
 
-    static void GetPackages() {
-      Task[] tasks = new Task[2];
-      tasks[0] = Task.Run(() => GetNuGetPackages("./NUGET.txt"));
-      tasks[1] = Task.Run(() => GetNpmPackages("./NPM.txt"));
-      Task.WaitAll(tasks);
-    }
-
     static string[] GetPackageList(string filename) {
       return File.ReadAllLines(filename);
     }
 
-    static void GetNuGetPackages(string filename) {
-      string[] pkg_list = GetPackageList(filename);
+    static void StartFetcher(BaseFetcher fetcher, Config.Fetcher cfg) {
+      string[] pkg_list = GetPackageList(cfg.input);
       int pkg_count = pkg_list.Length;
-      Nuget nuget = new(GetOutDir(NUGET_ID), GetDeltaDir(NUGET_ID), RUNTIME, STAGING);
       foreach(string line in pkg_list) {
-        nuget.Get(line);
-        nuget.ProcessIds();
-      }
-    }
-    static void GetNpmPackages(string filename) {
-      string[] pkg_list = GetPackageList(filename);
-      int pkg_count = pkg_list.Length;
-      CloneX.Fetchers.Npm npm = new(GetOutDir(NPM_ID), GetDeltaDir(NPM_ID), RUNTIME, STAGING);
-      foreach(string line in pkg_list) {
-        npm.Get(line);
-        npm.ProcessIds();
+        fetcher.Get(line);
+        fetcher.ProcessIds();
       }
     }
   }

@@ -5,7 +5,7 @@ using NuGet.Common;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-namespace CloneX.Fetchers {
+namespace Stockpile.Fetchers {
   public abstract class BaseFetcher {
     protected enum Status {
       CHECK = 0,
@@ -14,12 +14,9 @@ namespace CloneX.Fetchers {
       COMPLETE = 3,
       ERROR = 4
     };
-    protected readonly string out_dir_;
-    protected readonly string delta_dir_;
+    protected readonly Config.Fetcher cfg_;
     protected readonly bool seeding_;
-    protected readonly ParallelOptions po = new ParallelOptions {
-      MaxDegreeOfParallelism = 5
-    };
+    protected readonly ParallelOptions po_;
     protected int depth_ = 0; 
     
     private const string MSG_FMT_ = "{0}, {1,-6} - [T/D={2:F2}/{3:F2}mb] Packages:{4, -5} Versions:{5, -5} Depth={6,-5} {7}";
@@ -34,18 +31,18 @@ namespace CloneX.Fetchers {
     protected ILogger logger_ = NullLogger.Instance;
     protected CancellationToken ct_ = CancellationToken.None; 
     protected BaseFetcher(
-      string out_dir, 
-      string delta_dir,
-      string system,
+      Config.Fetcher cfg,
       DateTime runtime,
       bool seeding = false) {
+      this.cfg_ = cfg;
+      this.po_ = new ParallelOptions {
+        MaxDegreeOfParallelism = cfg.threading.parallel_pkg
+      };
+      this.SYSTEM_ = cfg.id;
       this.RUNTIME_ = runtime;
-      this.out_dir_ = out_dir;
-      this.delta_dir_ = delta_dir;
       this.seeding_ = seeding;
       this.found_ = new();
       this.error_ = new();
-      this.SYSTEM_ = system;
     }
 
     protected void AddPkgCount(int c) {
@@ -100,11 +97,11 @@ namespace CloneX.Fetchers {
     }
 
     protected string GetOutFilePath(string filename) {
-      return GetFilePath(this.out_dir_, filename);
+      return GetFilePath(this.cfg_.output.full, filename);
     }
 
     protected string GetDeltaFilePath(string filename) {
-      return GetFilePath(this.delta_dir_, filename);
+      return GetFilePath(this.cfg_.output.delta, filename);
     }
 
     protected void CopyToDelta(string out_fp) {
@@ -144,5 +141,6 @@ namespace CloneX.Fetchers {
     }
 
     public abstract void Get(string id);
+    public abstract void ProcessIds();
   }
 }

@@ -4,8 +4,7 @@ using System.Collections.Generic;
 using RestSharp;
 using System;
 
-namespace CloneX.Fetchers {
-
+namespace Stockpile.Fetchers {
 class Distribution {
   public string shasum {get; set;}
   public string tarball { get; set;}
@@ -27,12 +26,10 @@ public class Npm : BaseFetcher {
     "nightly",
     "dev"
   };
-  public const string SYSTEM = "NPM";
   private const string REGISTRY = "https://registry.npmjs.org/";
   private readonly RestClient client_ = new RestClient(REGISTRY);
 
-  public Npm(string out_dir, string delta_dir,
-             DateTime runtime, bool seeding = false) : base(out_dir, delta_dir, SYSTEM, runtime, seeding) {
+  public Npm(Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(cfg, runtime, seeding) {
   }
 
   public override void Get(string id) {
@@ -67,9 +64,9 @@ public class Npm : BaseFetcher {
     }
   }
   
-  public void ProcessIds() {
+  public override void ProcessIds() {
     /* Parallel, max 5 concurrent fetchers */
-    Parallel.ForEach(this.GetMemory(), po, (id) => {
+    Parallel.ForEach(this.GetMemory(), po_, (id) => {
       try {
         if (this.IsValid(id)) {
           ProcessVersions(id);

@@ -8,17 +8,16 @@ using NuGet.Packaging;
 using NuGet.Versioning;
 using System.Linq;
 
-namespace CloneX.Fetchers {
+namespace Stockpile.Fetchers {
 
 class Nuget : BaseFetcher  {
-  public const string SYSTEM = "NUGET";
   private static readonly string REPOSITORY_URL = "https://api.nuget.org/v3/index.json";
   private SourceRepository repository_; 
   private PackageMetadataResource meta_res_;
   private FindPackageByIdResource resource_;
   private SourceCacheContext cache_;
 
-  public Nuget(string out_dir, string delta_dir, DateTime runtime, bool seeding = false) : base(out_dir, delta_dir, SYSTEM, runtime, seeding) {
+  public Nuget(Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(cfg, runtime, seeding) {
     this.repository_ = Repository.Factory.GetCoreV3(REPOSITORY_URL);
     this.meta_res_ = repository_.GetResource<PackageMetadataResource>();
     this.resource_ = repository_.GetResource<FindPackageByIdResource>();
@@ -38,9 +37,9 @@ class Nuget : BaseFetcher  {
     depth_--;
   }
 
-  public void ProcessIds() {
+  public override void ProcessIds() {
     /* Parallel, max 5 concurrent fetchers */
-    Parallel.ForEach(this.GetMemory(), po, (id) => {
+    Parallel.ForEach(this.GetMemory(), po_, (id) => {
       try {
         IEnumerable<IPackageSearchMetadata> versions = this.GetMetadata(id);
         foreach (IPackageSearchMetadata version in versions) {

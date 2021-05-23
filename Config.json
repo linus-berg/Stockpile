@@ -1,0 +1,30 @@
+{
+  "fetchers": [
+    {
+      "id": "npm",
+      "type": "npm",
+      "threading": {
+        "parallel_pkg": 6,
+        "parallel_ver": 1
+      },
+      "input": "./NPM.txt",
+      "output": {
+        "full": "./PACKAGES/NPM/",
+        "delta": "./DELTA/NPM/"
+      }
+    },
+    {
+      "id": "nuget",
+      "type": "nuget",
+      "threading": {
+        "parallel_pkg": 6,
+        "parallel_ver": 1
+      },
+      "input": "./NUGET.txt",
+      "output": {
+        "full": "./PACKAGES/NUGET/",
+        "delta": "./DELTA/NUGET/"
+      }
+    }
+  ]
+}
