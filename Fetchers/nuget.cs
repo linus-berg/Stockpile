@@ -17,7 +17,7 @@ class Nuget : BaseFetcher  {
   private FindPackageByIdResource resource_;
   private SourceCacheContext cache_;
 
-  public Nuget(Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(cfg, runtime, seeding) {
+  public Nuget(Database db, Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(db, cfg, runtime, seeding) {
     this.repository_ = Repository.Factory.GetCoreV3(REPOSITORY_URL);
     this.meta_res_ = repository_.GetResource<PackageMetadataResource>();
     this.resource_ = repository_.GetResource<FindPackageByIdResource>();
@@ -32,7 +32,16 @@ class Nuget : BaseFetcher  {
     IEnumerable<IPackageSearchMetadata> versions = this.GetMetadata(id);
     AddPkgCount(Enumerable.Count(versions));
     foreach(IPackageSearchMetadata version in versions) {
+      string v_str = version.Identity.Version.ToString();
+      DBPackage db_pkg = db_.GetPackage(id, v_str);
+      if (db_pkg != null && db_pkg.IsProcessed()) {
+        continue;
+      } else if (db_pkg == null) {
+        this.db_.AddPackage(id, v_str, ""); 
+      }
       this.AddTransient(version.DependencySets);
+      /* Set dependency has been processed */
+      this.db_.SetProcessed(id, v_str);
     }
     depth_--;
   }
@@ -41,9 +50,9 @@ class Nuget : BaseFetcher  {
     /* Parallel, max 5 concurrent fetchers */
     Parallel.ForEach(this.GetMemory(), po_, (id) => {
       try {
-        IEnumerable<IPackageSearchMetadata> versions = this.GetMetadata(id);
-        foreach (IPackageSearchMetadata version in versions) {
-          this.GetNupkg(version.Identity.Id, version.Identity.Version);
+        IEnumerable<DBPackage> pkgs = this.db_.GetAllToDownload(id);
+        foreach (DBPackage pkg in pkgs) {
+          this.GetNupkg(pkg.id, pkg.version);
         }
       } catch (Exception) {
         // Processing error for {id}, for now ignore.
@@ -72,7 +81,7 @@ class Nuget : BaseFetcher  {
     ).Result;
   }
 
-  private void GetNupkg(string id, NuGetVersion version) {
+  private void GetNupkg(string id, string version) {
     SetStatus($"{id}@{version}", Status.FETCH);
     string filename = $"{id}/{id}.{version}.nupkg";
     string out_file = this.GetOutFilePath(filename);
@@ -82,7 +91,8 @@ class Nuget : BaseFetcher  {
       return;
     }
     using FileStream fs = File.OpenWrite(out_file);
-    Task t = this.resource_.CopyNupkgToStreamAsync(id, version, fs, cache_, logger_, ct_);
+    NuGetVersion v = new NuGetVersion(version);
+    Task t = this.resource_.CopyNupkgToStreamAsync(id, v, fs, cache_, logger_, ct_);
     Task.WaitAll(t);
     fs.Close();
     AddBytes(out_file);

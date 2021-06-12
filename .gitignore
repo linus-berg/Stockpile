@@ -3,3 +3,5 @@
 /obj
 /DELTA
 /PACKAGES
+*.sqlite
+*.sqlite-*

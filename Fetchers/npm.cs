@@ -28,8 +28,7 @@ public class Npm : BaseFetcher {
   };
   private const string REGISTRY = "https://registry.npmjs.org/";
   private readonly RestClient client_ = new RestClient(REGISTRY);
-
-  public Npm(Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(cfg, runtime, seeding) {
+  public Npm(Database db, Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(db, cfg, runtime, seeding) {
   }
 
   public override void Get(string id) {
@@ -51,16 +50,29 @@ public class Npm : BaseFetcher {
     /* For each version, add each versions dependencies! */
     foreach(var kv in pkg.versions) {
       Manifest manifest = kv.Value;
-      if (AvoidVersion(id, kv.Key) || manifest.dependencies == null) {
+      string version = kv.Key;
+      DBPackage db_pkg = db_.GetPackage(id, version);
+      
+      /* If package already in database AND FULLY CHECKED */
+      /* Do not reprocess dependencies. */
+      if (AvoidVersion(id, kv.Key) || (db_pkg != null && db_pkg.IsProcessed())) {
         continue;
       }
+      if (db_pkg == null) {
+        string url = manifest.dist.tarball ?? "";
+        this.db_.AddPackage(id, version, url);
+      }
       this.AddPkgCount(1);
-      SetStatus($"{id}@{kv.Key} ({manifest.dependencies.Count})", Status.PARSE);
-      foreach(KeyValuePair<string, string> p in manifest.dependencies) {
-        if (!this.InMemory(p.Key)) {
-          Get(p.Key);
+      if (manifest.dependencies != null) {
+        SetStatus($"{id}@{kv.Key} ({manifest.dependencies.Count})", Status.PARSE);
+        foreach(KeyValuePair<string, string> p in manifest.dependencies) {
+          if (!this.InMemory(p.Key)) {
+            Get(p.Key);
+          }
         }
       }
+      /* Upon walking back up the tree, set that this packages dependencies has been found. */
+      this.db_.SetProcessed(id, version);
     }
   }
   
@@ -78,16 +90,10 @@ public class Npm : BaseFetcher {
   }
 
   private void ProcessVersions(string id) {
-    Package pkg = GetPackage(id);
-    if (pkg == null || pkg.versions == null) {
-      throw new ApplicationException($"{id} versions is null."); 
-    }
-    foreach(KeyValuePair<string, Manifest> kv in pkg.versions) {
-      if (AvoidVersion(id, kv.Key)) {
-        continue;
-      }
-      SetStatus($"{id}@{kv.Key}", Status.FETCH);
-      TryGetTarball(id, kv.Value);
+    IEnumerable<DBPackage> pkgs = this.db_.GetAllToDownload(id);
+    foreach(DBPackage pkg in pkgs) {
+      SetStatus($"{id}@{pkg.version}", Status.FETCH);
+      TryGetTarball(id, pkg.url);
     }
   }
 
@@ -112,12 +118,12 @@ public class Npm : BaseFetcher {
     }*/
   }
 
-  private void TryGetTarball(string id, Manifest manifest) {
+  private void TryGetTarball(string id, string url) {
     try {
-      if (manifest.dist.tarball == null) {
+      if (url == null || url == "") {
         throw new ArgumentNullException($"{id} tarball is null.");
       }
-      this.GetTarball(manifest.dist.tarball);
+      this.GetTarball(url);
     } catch (Exception) {
       // ignore
     }

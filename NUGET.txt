@@ -1,2 +1,2 @@
+Microsoft.NETCore.Platforms
 ClosedXML
-DocumentFormat.Xml

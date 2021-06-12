@@ -19,7 +19,7 @@ namespace Stockpile.Fetchers {
     protected readonly ParallelOptions po_;
     protected int depth_ = 0; 
     
-    private const string MSG_FMT_ = "{0}, {1,-6} - [T/D={2:F2}/{3:F2}mb] Packages:{4, -5} Versions:{5, -5} Depth={6,-5} {7}";
+    private const string MSG_FMT_ = "{0} - {8}, {1,-6} - [T/D={2:F2}/{3:F2}mb] Packages:{4, -5} Versions:{5, -5} Depth={6,-5} {7}";
     private readonly string SYSTEM_;
     private readonly DateTime RUNTIME_;
     private int pkg_count_ = 0;
@@ -30,10 +30,13 @@ namespace Stockpile.Fetchers {
 
     protected ILogger logger_ = NullLogger.Instance;
     protected CancellationToken ct_ = CancellationToken.None; 
+    protected readonly Database db_;
     protected BaseFetcher(
+      Database db,
       Config.Fetcher cfg,
       DateTime runtime,
       bool seeding = false) {
+      this.db_ = db;
       this.cfg_ = cfg;
       this.po_ = new ParallelOptions {
         MaxDegreeOfParallelism = cfg.threading.parallel_pkg
@@ -54,14 +57,14 @@ namespace Stockpile.Fetchers {
     }
 
     protected void AddBytes(string file_path) {
-      this.bytes_total_ += GetBytes(file_path);
+      Interlocked.Add(ref bytes_total_, GetBytes(file_path));
     }
 
     protected long GetBytes(string file_path) {
       return new FileInfo(file_path).Length;
     }
 
-
+    
     protected void SetStatus(string id, Status status) {
       string status_msg = status switch {
         Status.CHECK => $"Checking {id}",
@@ -80,7 +83,8 @@ namespace Stockpile.Fetchers {
         found_.Count,
         pkg_count_,
         depth_,
-        status_msg
+        status_msg,
+        DateTime.UtcNow
       );
       Console.WriteLine(msg);
     }
@@ -100,19 +104,16 @@ namespace Stockpile.Fetchers {
       return GetFilePath(this.cfg_.output.full, filename);
     }
 
-    protected string GetDeltaFilePath(string filename) {
-      return GetFilePath(this.cfg_.output.delta, filename);
+    protected string GetDeltaFilePath(string filepath) {
+      return this.cfg_.output.delta + filepath.Replace(this.cfg_.output.full, "");
     }
 
     protected void CopyToDelta(string out_fp) {
+      Interlocked.Add(ref this.bytes_delta_, GetBytes(out_fp));
       if (!this.seeding_) {
-        string filename = Path.GetFileName(out_fp);
-        string delta_fp = GetDeltaFilePath(filename);
-        this.bytes_delta_ += GetBytes(out_fp);
+        string delta_fp = GetDeltaFilePath(out_fp);
         CreateFilePath(delta_fp);
-        if (!File.Exists(filename)) {
-          File.Copy(out_fp, delta_fp); 
-        }
+        File.Copy(out_fp, delta_fp); 
       }
     }
 
