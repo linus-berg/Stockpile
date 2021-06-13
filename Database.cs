@@ -18,14 +18,21 @@ namespace Stockpile {
   
   
   public class Database {
+    private static string db_storage_;
     private readonly string db_path_;
     private readonly SqliteConnection db_;
-    public static Database Open(string db_path, string type) {
-      string db_str = db_path + type + ".sqlite";
+    
+    public static void SetDatabaseDir(string db_storage) {
+      db_storage_ = db_storage;
+      Directory.CreateDirectory(db_storage_);
+    }
+
+    public static Database Open(string type) {
+      string db_str = db_storage_ + type + ".sqlite";
       bool exists = File.Exists(db_str);
       Database db = new Database(db_str);
       if (!exists) {
-        db.Init(db_path);
+        db.Init();
       }
       return db;
     }
@@ -48,8 +55,8 @@ namespace Stockpile {
       db_.Close();
     }
 
-    private void Init(string db_path) {
-      string init_sql_path = db_path + "create_db.sql";
+    private void Init() {
+      string init_sql_path = db_storage_ + "create_db.sql";
       if (!File.Exists(init_sql_path)) {
         throw new FileNotFoundException("create_db.sql");
       }

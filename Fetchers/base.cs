@@ -19,24 +19,26 @@ namespace Stockpile.Fetchers {
     protected readonly ParallelOptions po_;
     protected int depth_ = 0; 
     protected Utils utils_;    
-    private const string MSG_FMT_ = "{0} - {8}, {1,-6} - [T/D={2:F2}/{3:F2}mb] Packages:{4, -5} Versions:{5, -5} Depth={6,-5} {7}";
     private readonly string SYSTEM_;
     private readonly DateTime RUNTIME_;
-    private int pkg_count_ = 0;
+    
+    private int versions_ = 0;
     private long bytes_delta_ = 0;
     private long bytes_total_ = 0;
+
+    /* List of found package ids */
     private HashSet<string> found_;
     private HashSet<string> error_;
 
     protected ILogger logger_ = NullLogger.Instance;
     protected CancellationToken ct_ = CancellationToken.None; 
+    
     protected readonly Database db_;
+
     protected BaseFetcher(
-      Database db,
       Config.Fetcher cfg,
       DateTime runtime,
       bool seeding = false) {
-      this.db_ = db;
       this.cfg_ = cfg;
       this.po_ = new ParallelOptions {
         MaxDegreeOfParallelism = cfg.threading.parallel_pkg
@@ -46,11 +48,12 @@ namespace Stockpile.Fetchers {
       this.seeding_ = seeding;
       this.found_ = new();
       this.error_ = new();
+      this.db_ = Database.Open(SYSTEM_);
       utils_ = new Utils(RUNTIME_, SYSTEM_);
     }
 
-    protected void AddPkgCount(int c) {
-      pkg_count_ += c;
+    protected void AddToVersionCount(int c) {
+      versions_ += c;
     }
 
     private string GetFilePath(string dir, string filename) {
@@ -81,7 +84,7 @@ namespace Stockpile.Fetchers {
         bytes_total = bytes_total_ / (1024.0 * 1024.0),
         bytes_delta = bytes_delta_ / (1024.0 * 1024.0),
         packages = found_.Count,
-        versions = pkg_count_,
+        versions = versions_,
         depth = depth_
       });
     }
@@ -91,10 +94,7 @@ namespace Stockpile.Fetchers {
     }
 
     protected void CreateFilePath(string file_path) {
-      string dir =  Path.GetDirectoryName(file_path);
-      if (!Directory.Exists(dir)) {
-        Directory.CreateDirectory(dir);
-      }
+      Directory.CreateDirectory(Path.GetDirectoryName(file_path));
     }
 
     protected string GetOutFilePath(string filename) {

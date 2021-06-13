@@ -30,7 +30,10 @@ namespace Stockpile {
     static void Run(CLI.Options opt) {
       STAGING = opt.staging;
       Config.Main cfg = ReadConfigFile();
-      CreateDir(cfg.db_path);
+
+      /* Setup database storage location */
+      Database.SetDatabaseDir(cfg.db_path);
+
       List<BaseFetcher> fetchers = new List<BaseFetcher>();
       List<Task> tasks = new List<Task>(); 
       foreach(Config.Fetcher cfg_fetcher in cfg.fetchers) {
@@ -53,36 +56,22 @@ namespace Stockpile {
 
     static BaseFetcher GetFetcherType(Config.Main main_cfg, Config.Fetcher cfg) {
       Config.Output output = cfg.output;
-      CreateTypeDirs(output.full, output.delta);
-      cfg.output.delta = GetDeltaDir(cfg.output.delta) + '/';
+      cfg.output.delta = cfg.output.delta + RUNTIME.ToString(DATE_FMT) + '/';
+      
       return cfg.type switch {
-        "npm" => new Npm(Database.Open(main_cfg.db_path, "NPM"), cfg, RUNTIME, STAGING),
-        "nuget" => new Nuget(Database.Open(main_cfg.db_path, "NUGET"), cfg, RUNTIME, STAGING),
+        "npm" => new Npm(cfg, RUNTIME, STAGING),
+        "nuget" => new Nuget(cfg, RUNTIME, STAGING),
+        "git" => new Git(cfg, RUNTIME, STAGING),
         _ => throw new ArgumentException("type")
       };
-    }
-    
-    static void CreateTypeDirs(string full, string delta) {
-      CreateDir(full);
-      CreateDir(GetDeltaDir(delta));
     }
     
     static string GetDeltaDir(string dir) {
       return dir + RUNTIME.ToString(DATE_FMT);
     }
 
-    static void CreateDir(string directory) {
-      if (!Directory.Exists(directory)) {
-        Directory.CreateDirectory(directory);
-      }
-    }
-
-    static string[] GetPackageList(string filename) {
-      return File.ReadAllLines(filename);
-    }
-
     static void StartFetcher(BaseFetcher fetcher, Config.Fetcher cfg) {
-      string[] pkg_list = GetPackageList(cfg.input);
+      string[] pkg_list = File.ReadAllLines(cfg.input);
       int pkg_count = pkg_list.Length;
       foreach(string line in pkg_list) {
         fetcher.Get(line);

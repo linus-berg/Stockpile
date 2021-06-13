@@ -28,7 +28,7 @@ public class Npm : BaseFetcher {
   };
   private const string REGISTRY = "https://registry.npmjs.org/";
   private readonly RestClient client_ = new RestClient(REGISTRY);
-  public Npm(Database db, Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(db, cfg, runtime, seeding) {
+  public Npm(Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(cfg, runtime, seeding) {
   }
 
   public override void Get(string id) {
@@ -57,7 +57,7 @@ public class Npm : BaseFetcher {
       DBPackage db_pkg = db_.GetPackage(id, version);
       bool in_db = db_pkg != null;
       bool is_processed = in_db && db_pkg.IsProcessed(); 
-      this.AddPkgCount(1);
+      this.AddToVersionCount(1);
       /* If package already in database AND FULLY PROCESSED */
       /* Do not reprocess dependency tree. */
       if (is_processed) {

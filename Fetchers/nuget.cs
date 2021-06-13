@@ -17,7 +17,7 @@ class Nuget : BaseFetcher  {
   private FindPackageByIdResource resource_;
   private SourceCacheContext cache_;
 
-  public Nuget(Database db, Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(db, cfg, runtime, seeding) {
+  public Nuget(Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(cfg, runtime, seeding) {
     this.repository_ = Repository.Factory.GetCoreV3(REPOSITORY_URL);
     this.meta_res_ = repository_.GetResource<PackageMetadataResource>();
     this.resource_ = repository_.GetResource<FindPackageByIdResource>();
@@ -30,7 +30,7 @@ class Nuget : BaseFetcher  {
     /* Memorize to not check again */
     Memorize(id);
     IEnumerable<IPackageSearchMetadata> versions = this.GetMetadata(id);
-    AddPkgCount(Enumerable.Count(versions));
+    AddToVersionCount(Enumerable.Count(versions));
     foreach(IPackageSearchMetadata version in versions) {
       string v_str = version.Identity.Version.ToString();
       DBPackage db_pkg = db_.GetPackage(id, v_str);
@@ -97,7 +97,7 @@ class Nuget : BaseFetcher  {
     Task.WaitAll(t);
     fs.Close();
     AddBytes(out_file);
-    this.CopyToDelta(out_file);
+    this.CopyToDelta(filename);
   }
 } 
 }
