@@ -20,8 +20,6 @@ namespace Stockpile {
   public class Database {
     private readonly string db_path_;
     private readonly SqliteConnection db_;
-    private readonly string TYPE_;
-    
     public static Database Open(string db_path, string type) {
       string db_str = db_path + type + ".sqlite";
       bool exists = File.Exists(db_str);

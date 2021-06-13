@@ -30,6 +30,7 @@ namespace Stockpile {
     static void Run(CLI.Options opt) {
       STAGING = opt.staging;
       Config.Main cfg = ReadConfigFile();
+      CreateDir(cfg.db_path);
       List<BaseFetcher> fetchers = new List<BaseFetcher>();
       List<Task> tasks = new List<Task>(); 
       foreach(Config.Fetcher cfg_fetcher in cfg.fetchers) {
