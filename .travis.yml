@@ -2,16 +2,26 @@ language: csharp
 mono: none
 dist: xenial
 dotnet: 5.0
+env:
+  global:
+    - DIST=${TRAVIS_BUILD_DIR}/Dist
+    - TGZ=${DIST}/Stockpiler-${TRAVIS_BUILD_NUMBER}
 install:
   - dotnet restore
 script:
-  - dotnet publish -p:PublishSingleFile=true -c Release --self-contained -r win-x64 -o ./Dist/Windows/
-  - dotnet publish -p:PublishSingleFile=true -c Release --self-contained -r linux-x64 -o ./Dist/Linux/
+  - dotnet publish -p:PublishSingleFile=true -c Release --self-contained -r win-x64 -o ${DIST}/Windows/
+  - dotnet publish -p:PublishSingleFile=true -c Release --self-contained -r linux-x64 -o ${DIST}/Linux/
+
+before_deploy:
+  - tar -zcf ${TGZ}-windows.tar.gz ${DIST}/Windows
+  - tar -zcf ${TGZ}-linux.tar.gz ${DIST}/Linux
+
 deploy:
   provider: releases
   api_key: 
     secure: "i7AHMXJWTXJf9S9N0ISU/5G8J9odkTrGOZfQDOq95Pc43idb+ILvHb+qMCykNFW17xRIFlzD6LSH5kUDyE6D3v7upSrNqRm9x7SQPTRCyBBeNEDRkIwZZeXNgivWlCGX7Oi6fbwyNtiUQzbgr0ogGkGTPtl+m9OvPRymt7WcZm1TIK5trRFA641cgs24BXpvSxQt0nm+7MArmfzqexFsLLMdGKFGLTykUWtef03OomSlO4e6Q3uv6QrFHygHsqLOLEeP9WmS1elsevCtfJRe0WtV3/gfjA5QCPHFBnEZMIDZeBiGqPGzub8IfdvCrmmkGs4ggfFACt9/k9QIpOC3pUWqwnp43qdT9SSwAP6h4nU6KF9p3bKMDWGdPcdjGskwijR8vMFsPXlktcqhk/E3WrWUnUfPdLLADyLcORe9MAcLJel35trRNohK7VUsDSjcwe7cMJ475eL8ZX3NtZmDxJao7Xn0ZXDyR6Qf0Pra25ri31sWcfaoUZM7cihneGRVCaVo56oZmP1TW1rvG/ObW1GMsk5aCpjJxUu3QbcOXEUF1u9Z8qMN4I1ke9p8NpjueQsj9HAo1GYZ+f5zqxi5AHX5wvPAFwCqgbOECCBSzVhnp8ozFLE5H6UfW4n87bfoQ7vliZHl7SVFmhDqME/rk449BE0uTYfg0SxZMhxafr4="
-  file_glob: true
-  file: Dist/Linux/*
+  file: 
+    - "${TGZ}-windows.tar.gz"
+    - "${TGZ}-linux.tar.gz"
   skip_cleanup: true
   draft: true
