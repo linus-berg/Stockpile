@@ -12,3 +12,4 @@ deploy:
   file_glob: true
   file: Dist/Windows/*
   skip_cleanup: true
+  draft: true
