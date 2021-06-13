@@ -17,10 +17,10 @@ class Git : BaseFetcher  {
 
     /* Just delete old things then download again... easiest solution */ 
     if (Directory.Exists(path)) {
-      Directory.Delete(path);
+      Directory.Delete(path, true);
     }
     Directory.CreateDirectory(path);
-
+    SetStatus($"{id}", Status.FETCH);
     CloneOptions co = new CloneOptions();
     co.IsBare = true;
     Repository.Clone(id, path, co);
