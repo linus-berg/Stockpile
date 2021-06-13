@@ -49,20 +49,26 @@ public class Npm : BaseFetcher {
   private void AddTransient(string id, Package pkg) {
     /* For each version, add each versions dependencies! */
     foreach(var kv in pkg.versions) {
+      if (AvoidVersion(id, kv.Key)) {
+        continue;
+      }
       Manifest manifest = kv.Value;
       string version = kv.Key;
       DBPackage db_pkg = db_.GetPackage(id, version);
-      
-      /* If package already in database AND FULLY CHECKED */
-      /* Do not reprocess dependencies. */
-      if (AvoidVersion(id, kv.Key) || (db_pkg != null && db_pkg.IsProcessed())) {
+      bool in_db = db_pkg != null;
+      bool is_processed = in_db && db_pkg.IsProcessed(); 
+      this.AddPkgCount(1);
+      /* If package already in database AND FULLY PROCESSED */
+      /* Do not reprocess dependency tree. */
+      if (is_processed) {
         continue;
       }
-      if (db_pkg == null) {
+
+      if (!in_db) {
         string url = manifest.dist.tarball ?? "";
         this.db_.AddPackage(id, version, url);
       }
-      this.AddPkgCount(1);
+
       if (manifest.dependencies != null) {
         SetStatus($"{id}@{kv.Key} ({manifest.dependencies.Count})", Status.PARSE);
         foreach(KeyValuePair<string, string> p in manifest.dependencies) {
@@ -78,7 +84,8 @@ public class Npm : BaseFetcher {
   
   public override void ProcessIds() {
     /* Parallel, max 5 concurrent fetchers */
-    Parallel.ForEach(this.GetMemory(), po_, (id) => {
+    List<string> ids = (List<string>)db_.GetAllPackages();
+    Parallel.ForEach(ids, po_, (id) => {
       try {
         if (this.IsValid(id)) {
           ProcessVersions(id);
@@ -130,11 +137,16 @@ public class Npm : BaseFetcher {
   }
   
   private void GetTarball(string url) {
-    string out_fp = this.GetOutFilePath(StripRegistry(url).Replace("/-/", "/"));
+    string fp = StripRegistry(url).Replace("/-/", "/");
+    string out_fp = this.GetOutFilePath(fp);
     this.CreateFilePath(out_fp);
+    bool on_disk = OnDisk(out_fp);
     /* If not on disk and the download succeeded */
-    if (!OnDisk(out_fp) && Download(url, out_fp)) {
-      this.CopyToDelta(out_fp);
+    if (!on_disk && Download(url, out_fp)) {
+      this.CopyToDelta(fp);
+    } else if (on_disk) {
+    } else {
+      Console.WriteLine($"{url} download failed");
     }
     this.AddBytes(out_fp);
   }

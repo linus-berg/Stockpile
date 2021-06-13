@@ -48,7 +48,8 @@ class Nuget : BaseFetcher  {
 
   public override void ProcessIds() {
     /* Parallel, max 5 concurrent fetchers */
-    Parallel.ForEach(this.GetMemory(), po_, (id) => {
+    IEnumerable<string> ids = db_.GetAllPackages();
+    Parallel.ForEach(ids, po_, (id) => {
       try {
         IEnumerable<DBPackage> pkgs = this.db_.GetAllToDownload(id);
         foreach (DBPackage pkg in pkgs) {

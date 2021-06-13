@@ -37,7 +37,11 @@ namespace Stockpile {
       db_ = new SqliteConnection($"Data Source={path}");
       db_.Open();
       using (var command = db_.CreateCommand()) {
-        command.CommandText = "PRAGMA journal_mode = WAL";
+        command.CommandText = @"
+          PRAGMA journal_mode = WAL;
+          PRAGMA synchronous = normal;
+          PRAGMA temp_store = memory;
+        ";
         command.ExecuteNonQuery();
       }
     }
@@ -71,7 +75,11 @@ namespace Stockpile {
             version
           });
     }
+    public IEnumerable<string> GetAllPackages() {
+      IEnumerable<string> packages = db_.Query<string>("SELECT id FROM packages WHERE processed=1 GROUP BY id");
+      return packages;
 
+    }
     public IEnumerable<DBPackage> GetAllToDownload(string id) {
       IEnumerable<DBPackage> packages = db_.Query<DBPackage>("SELECT * FROM packages WHERE id=@id AND processed=1", new { id });
       return packages;

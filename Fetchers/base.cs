@@ -18,7 +18,7 @@ namespace Stockpile.Fetchers {
     protected readonly bool seeding_;
     protected readonly ParallelOptions po_;
     protected int depth_ = 0; 
-    
+    protected Utils utils_;    
     private const string MSG_FMT_ = "{0} - {8}, {1,-6} - [T/D={2:F2}/{3:F2}mb] Packages:{4, -5} Versions:{5, -5} Depth={6,-5} {7}";
     private readonly string SYSTEM_;
     private readonly DateTime RUNTIME_;
@@ -46,6 +46,7 @@ namespace Stockpile.Fetchers {
       this.seeding_ = seeding;
       this.found_ = new();
       this.error_ = new();
+      utils_ = new Utils(RUNTIME_, SYSTEM_);
     }
 
     protected void AddPkgCount(int c) {
@@ -67,26 +68,22 @@ namespace Stockpile.Fetchers {
     
     protected void SetStatus(string id, Status status) {
       string status_msg = status switch {
-        Status.CHECK => $"Checking {id}",
-        Status.PARSE => $"Finding dependencies {id}",
-        Status.FETCH => $"Fetching {id}",
-        Status.ERROR => $"ERROR->{id}",
+        Status.CHECK => $"Metadata {id}",
+        Status.PARSE => $"Scanning {id}",
+        Status.FETCH => $"Download {id}",
+        Status.ERROR => $"!!ERROR!! -- {id}",
         Status.COMPLETE => "Complete!",
         _ => "Unknown"
       };
-      string msg = string.Format(
-        MSG_FMT_,
-        RUNTIME_,
-        SYSTEM_,
-        bytes_total_ / (1024.0 * 1024.0),
-        bytes_delta_ / (1024.0 * 1024.0),
-        found_.Count,
-        pkg_count_,
-        depth_,
-        status_msg,
-        DateTime.UtcNow
-      );
-      Console.WriteLine(msg);
+      
+      utils_.Message(new Message {
+        message = status_msg,
+        bytes_total = bytes_total_ / (1024.0 * 1024.0),
+        bytes_delta = bytes_delta_ / (1024.0 * 1024.0),
+        packages = found_.Count,
+        versions = pkg_count_,
+        depth = depth_
+      });
     }
 
     ~BaseFetcher() {
@@ -105,13 +102,14 @@ namespace Stockpile.Fetchers {
     }
 
     protected string GetDeltaFilePath(string filepath) {
-      return this.cfg_.output.delta + filepath.Replace(this.cfg_.output.full, "");
+      return GetFilePath(this.cfg_.output.delta, filepath);
     }
 
-    protected void CopyToDelta(string out_fp) {
+    protected void CopyToDelta(string fp) {
+      string out_fp = GetOutFilePath(fp);
       Interlocked.Add(ref this.bytes_delta_, GetBytes(out_fp));
       if (!this.seeding_) {
-        string delta_fp = GetDeltaFilePath(out_fp);
+        string delta_fp = GetDeltaFilePath(fp);
         CreateFilePath(delta_fp);
         File.Copy(out_fp, delta_fp); 
       }

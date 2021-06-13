@@ -1,5 +1,5 @@
 {
-  "db_path": "./databases/",
+  "db_path": "./Store/",
   "fetchers": [
     {
       "id": "npm",
