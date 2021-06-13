@@ -14,8 +14,8 @@ script:
   - dotnet publish -p:PublishSingleFile=true -c Release --self-contained -r linux-x64 -o ${DIST}/Linux/
 
 before_deploy:
-  - tar -zcf ${TRAVIS_TAG}-windows.tar.gz -C ${DIST}/Windows *
-  - tar -zcf ${TRAVIS_TAG}-linux.tar.gz -C ${DIST}/Linux *
+  - tar -zcf ${TGZ}-windows.tar.gz -C ${DIST}/Windows *
+  - tar -zcf ${TGZ}-linux.tar.gz -C ${DIST}/Linux *
 
 deploy:
   provider: releases
