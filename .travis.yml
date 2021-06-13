@@ -16,9 +16,6 @@ script:
 before_deploy:
   - tar -zcf ${TGZ}-windows.tar.gz ${DIST}/Windows
   - tar -zcf ${TGZ}-linux.tar.gz ${DIST}/Linux
-  - git config --local user.name "linus-berg"
-  - git config --local user.email "linus@fenix.me.uk"
-  - git tag ${TRAVIS_TAG}
 
 deploy:
   provider: releases
@@ -28,5 +25,3 @@ deploy:
     - "${TGZ}-windows.tar.gz"
     - "${TGZ}-linux.tar.gz"
   skip_cleanup: true
-  on:
-    tags: true
