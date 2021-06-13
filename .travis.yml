@@ -4,8 +4,9 @@ dist: xenial
 dotnet: 5.0
 env:
   global:
+    - TRAVIS_TAG=Stockpiler-${TRAVIS_BUILD_NUMBER}
     - DIST=${TRAVIS_BUILD_DIR}/Dist
-    - TGZ=${DIST}/Stockpiler-${TRAVIS_BUILD_NUMBER}
+    - TGZ=${DIST}/${TRAVIS_TAG}
 install:
   - dotnet restore
 script:
@@ -15,6 +16,9 @@ script:
 before_deploy:
   - tar -zcf ${TGZ}-windows.tar.gz ${DIST}/Windows
   - tar -zcf ${TGZ}-linux.tar.gz ${DIST}/Linux
+  - git config --local user.name "linus-berg"
+  - git config --local user.email "linus@fenix.me.uk"
+  - git tag ${TRAVIS_TAG}
 
 deploy:
   provider: releases
@@ -24,4 +28,5 @@ deploy:
     - "${TGZ}-windows.tar.gz"
     - "${TGZ}-linux.tar.gz"
   skip_cleanup: true
-  draft: true
+  on:
+    tags: true
