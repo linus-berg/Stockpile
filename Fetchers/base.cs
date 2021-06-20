@@ -12,7 +12,8 @@ namespace Stockpile.Fetchers {
       PARSE = 1,
       FETCH = 2,
       COMPLETE = 3,
-      ERROR = 4
+      ERROR = 4,
+      EXISTS = 5
     };
     protected readonly Config.Fetcher cfg_;
     protected readonly bool seeding_;
@@ -22,6 +23,7 @@ namespace Stockpile.Fetchers {
     private readonly string SYSTEM_;
     private readonly DateTime RUNTIME_;
     
+    private int packages_ = 0;
     private int versions_ = 0;
     private long bytes_delta_ = 0;
     private long bytes_total_ = 0;
@@ -56,6 +58,14 @@ namespace Stockpile.Fetchers {
       versions_ += c;
     }
 
+    protected void SetVersionCount(int c) {
+      versions_ = c;
+    }
+    
+    protected void SetPackageCount(int c) {
+      packages_ = c;
+    }
+
     private string GetFilePath(string dir, string filename) {
       return Path.Combine(Path.GetFullPath(dir), filename);
     }
@@ -74,6 +84,7 @@ namespace Stockpile.Fetchers {
         Status.CHECK => $"Metadata {id}",
         Status.PARSE => $"Scanning {id}",
         Status.FETCH => $"Download {id}",
+        Status.EXISTS => $"Existing {id}",
         Status.ERROR => $"!!ERROR!! -- {id}",
         Status.COMPLETE => "Complete!",
         _ => "Unknown"
@@ -83,7 +94,7 @@ namespace Stockpile.Fetchers {
         message = status_msg,
         bytes_total = bytes_total_ / (1024.0 * 1024.0),
         bytes_delta = bytes_delta_ / (1024.0 * 1024.0),
-        packages = found_.Count,
+        packages = packages_,
         versions = versions_,
         depth = depth_
       });
@@ -120,6 +131,7 @@ namespace Stockpile.Fetchers {
     }
     
     protected void Memorize(string id) {
+      this.packages_++;
       this.found_.Add(id); 
     }
 

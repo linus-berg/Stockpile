@@ -1,3 +1,2 @@
-react
-angular
-element-ui
+minimist
+chalk

@@ -85,6 +85,14 @@ namespace Stockpile {
       return packages;
 
     }
+    public int GetPackageCount() {
+      return db_.Query<int>("SELECT COUNT(DISTINCT id) FROM packages").FirstOrDefault();
+    }
+    
+    public int GetVersionCount() {
+      return db_.Query<int>("SELECT COUNT(*) FROM packages").FirstOrDefault();
+    }
+
     public IEnumerable<DBPackage> GetAllToDownload(string id) {
       IEnumerable<DBPackage> packages = db_.Query<DBPackage>("SELECT * FROM packages WHERE id=@id AND processed=1", new { id });
       return packages;

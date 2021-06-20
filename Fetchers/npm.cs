@@ -98,8 +98,9 @@ public class Npm : BaseFetcher {
 
   private void ProcessVersions(string id) {
     IEnumerable<DBPackage> pkgs = this.db_.GetAllToDownload(id);
+    SetVersionCount(this.db_.GetVersionCount());
+    SetPackageCount(this.db_.GetPackageCount());
     foreach(DBPackage pkg in pkgs) {
-      SetStatus($"{id}@{pkg.version}", Status.FETCH);
       TryGetTarball(id, pkg.url);
     }
   }
@@ -142,11 +143,15 @@ public class Npm : BaseFetcher {
     this.CreateFilePath(out_fp);
     bool on_disk = OnDisk(out_fp);
     /* If not on disk and the download succeeded */
-    if (!on_disk && Download(url, out_fp)) {
-      this.CopyToDelta(fp);
-    } else if (on_disk) {
+    if (!on_disk) {
+      SetStatus($"{fp}", Status.FETCH);
+      if(Download(url, out_fp)) {
+        this.CopyToDelta(fp);
+      } else {
+        Console.WriteLine($"{url} download failed");
+      }
     } else {
-      Console.WriteLine($"{url} download failed");
+      SetStatus($"{fp}", Status.EXISTS);
     }
     this.AddBytes(out_fp);
   }
