@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 
 namespace Stockpile.Fetchers {
   public class Message {
@@ -12,9 +13,9 @@ namespace Stockpile.Fetchers {
   public class Utils {
     private readonly string SYSTEM_;
     private readonly DateTime START_TIME_;
-    public Utils(DateTime start_time, string system) {
+    public Utils(string system) {
       SYSTEM_ = system;
-      START_TIME_ = start_time;
+      START_TIME_ = Process.GetCurrentProcess().StartTime.ToUniversalTime();
     }
     private const string PREFIX_ = "{0} - {8}, {1,-6} - [T/D={2:F2}/{3:F2}mb] Packages:{4, -5} Versions:{5, -5} Depth={6,-5}";
     

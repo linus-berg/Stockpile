@@ -4,6 +4,7 @@ using System.Threading;
 using NuGet.Common;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Stockpile.Fetchers {
   public abstract class BaseFetcher {
@@ -15,13 +16,12 @@ namespace Stockpile.Fetchers {
       ERROR = 4,
       EXISTS = 5
     };
+    protected readonly Config.Main main_cfg_;
     protected readonly Config.Fetcher cfg_;
     protected readonly bool seeding_;
     protected readonly ParallelOptions po_;
     protected int depth_ = 0; 
     protected Utils utils_;    
-    private readonly string SYSTEM_;
-    private readonly DateTime RUNTIME_;
     
     private int packages_ = 0;
     private int versions_ = 0;
@@ -31,29 +31,41 @@ namespace Stockpile.Fetchers {
     /* List of found package ids */
     private HashSet<string> found_;
     private HashSet<string> error_;
-
+    private Dictionary<string, Config.Filter> filters_;
     protected ILogger logger_ = NullLogger.Instance;
     protected CancellationToken ct_ = CancellationToken.None; 
     
     protected readonly Database db_;
 
-    protected BaseFetcher(
-      Config.Fetcher cfg,
-      DateTime runtime,
-      bool seeding = false) {
+    protected BaseFetcher(Config.Main main_cfg, Config.Fetcher cfg) {
+      this.main_cfg_ = main_cfg;
       this.cfg_ = cfg;
       this.po_ = new ParallelOptions {
         MaxDegreeOfParallelism = cfg.threading.parallel_pkg
       };
-      this.SYSTEM_ = cfg.id;
-      this.RUNTIME_ = runtime;
-      this.seeding_ = seeding;
+      this.seeding_ = main_cfg_.staging;
+      this.filters_ = new();
       this.found_ = new();
       this.error_ = new();
-      this.db_ = Database.Open(SYSTEM_);
-      utils_ = new Utils(RUNTIME_, SYSTEM_);
+      this.db_ = Database.Open(cfg.id);
+      utils_ = new Utils(cfg.id);
+      LoadFilters();
     }
 
+
+    protected void LoadFilters() {
+      if (cfg_.filters == null) {
+        return;
+      }
+      foreach(string group_id in cfg_.filters) {
+        Dictionary<string, Config.Filter> filter_group = main_cfg_.filters[group_id];
+        /* Add all active filter groups. */
+        foreach(KeyValuePair<string, Config.Filter> filter in filter_group) {
+          this.filters_[filter.Key] = filter.Value;
+        }
+      }
+    }
+    
     protected void AddToVersionCount(int c) {
       versions_ += c;
     }
@@ -103,6 +115,45 @@ namespace Stockpile.Fetchers {
     ~BaseFetcher() {
       SetStatus("", Status.COMPLETE);
     }
+
+    protected bool ExecFilters(string id, string version, int downloads, string date) {
+      /* Package specific filter */
+      if (filters_.ContainsKey(id)) {
+        if (ExecFilter(filters_[id], id, version, downloads, date)) {
+          return false;
+        }
+      }
+
+      /* Global filters */
+      if (filters_.ContainsKey("*")) {
+        if(ExecFilter(filters_["*"], id, version, downloads, date)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    private bool ExecFilter(Config.Filter filter, string id, string version, int downloads, string date) {
+      if (filter.version != null) {
+        if (Regex.IsMatch(version, filter.version)) {
+          return true;
+        }  
+      }
+
+      if (filter.min_downloads > 0 && downloads < filter.min_downloads) {
+        return true;
+      }
+
+      if (filter.min_date != null) {
+        DateTime filter_date = DateTime.Parse(filter.min_date);
+        DateTime package_date = DateTime.Parse(date);
+        if (filter_date > package_date) {
+          return true;
+        }
+      }
+      return false;
+    }
+
 
     protected void CreateFilePath(string file_path) {
       Directory.CreateDirectory(Path.GetDirectoryName(file_path));

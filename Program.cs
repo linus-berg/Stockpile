@@ -11,7 +11,6 @@ namespace Stockpile {
     const string CFG_PATH = "./Config.json";
     const string DELTA_DIR_NAME = "{0}{1}";
     const string DATE_FMT = "yyyyMMddHHmmssff"; 
-    static bool STAGING = true;
     static readonly DateTime RUNTIME = DateTime.UtcNow;
 
     static int Main(string[] args) {
@@ -28,8 +27,8 @@ namespace Stockpile {
     }
 
     static void Run(CLI.Options opt) {
-      STAGING = opt.staging;
       Config.Main cfg = ReadConfigFile();
+      cfg.staging = opt.staging || cfg.staging;
 
       /* Setup database storage location */
       Database.SetDatabaseDir(cfg.db_path);
@@ -57,11 +56,11 @@ namespace Stockpile {
     static BaseFetcher GetFetcherType(Config.Main main_cfg, Config.Fetcher cfg) {
       Config.Output output = cfg.output;
       cfg.output.delta = cfg.output.delta + RUNTIME.ToString(DATE_FMT) + '/';
-      
+
       return cfg.type switch {
-        "npm" => new Npm(cfg, RUNTIME, STAGING),
-        "nuget" => new Nuget(cfg, RUNTIME, STAGING),
-        "git" => new Git(cfg, RUNTIME, STAGING),
+        "npm" => new Npm(main_cfg, cfg),
+        "nuget" => new Nuget(main_cfg, cfg),
+        "git" => new Git(main_cfg, cfg),
         _ => throw new ArgumentException("type")
       };
     }

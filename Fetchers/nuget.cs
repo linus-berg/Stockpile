@@ -17,7 +17,7 @@ class Nuget : BaseFetcher  {
   private FindPackageByIdResource resource_;
   private SourceCacheContext cache_;
 
-  public Nuget(Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(cfg, runtime, seeding) {
+  public Nuget(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
     this.repository_ = Repository.Factory.GetCoreV3(REPOSITORY_URL);
     this.meta_res_ = repository_.GetResource<PackageMetadataResource>();
     this.resource_ = repository_.GetResource<FindPackageByIdResource>();

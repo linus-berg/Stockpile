@@ -3,6 +3,7 @@ namespace Stockpile.Config {
     public string id {get; set;}
     public string type {get; set;}
     public Threading threading {get; set;}
+    public string[] filters {get; set;}
     public string input {get; set;}
     public Output output {get; set;}
   }

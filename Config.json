@@ -1,9 +1,28 @@
 {
   "db_path": "./Store/",
+  "filters": {
+    "npm-filter": {
+      "*": {
+        "version": "dev"
+      },
+      "@graphql-codegen": {
+        "version": "alpha"
+      },
+      "typescript": {
+        "version": "dev"
+      },
+      "google-closure-compiler": {
+        "version": "nightly"
+      }
+    }
+  },
   "fetchers": [
     {
       "id": "npm",
       "type": "npm",
+      "filters": [
+        "npm-filter"
+      ],
       "threading": {
         "parallel_pkg": 6,
         "parallel_ver": 1

@@ -6,7 +6,7 @@ namespace Stockpile.Fetchers {
 
 class Git : BaseFetcher  {
 
-  public Git(Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(cfg, runtime, seeding) {
+  public Git(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
   }
 
   public override void Get(string id) {

@@ -28,7 +28,7 @@ public class Npm : BaseFetcher {
   };
   private const string REGISTRY = "https://registry.npmjs.org/";
   private readonly RestClient client_ = new RestClient(REGISTRY);
-  public Npm(Config.Fetcher cfg, DateTime runtime, bool seeding = false) : base(cfg, runtime, seeding) {
+  public Npm(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
   }
 
   public override void Get(string id) {
@@ -49,7 +49,8 @@ public class Npm : BaseFetcher {
   private void AddTransient(string id, Package pkg) {
     /* For each version, add each versions dependencies! */
     foreach(var kv in pkg.versions) {
-      if (AvoidVersion(id, kv.Key)) {
+      /* Should version be filtered? */
+      if (!ExecFilters(id, kv.Key, 0, null)) {
         continue;
       }
       Manifest manifest = kv.Value;
@@ -103,27 +104,6 @@ public class Npm : BaseFetcher {
     foreach(DBPackage pkg in pkgs) {
       TryGetTarball(id, pkg.url);
     }
-  }
-
-  private bool AvoidVersion(string id, string version) {
-    string v_l = version.ToLower();
-    foreach(string outlaw in VERSION_OUTLAWS) {
-      if (v_l.Contains(outlaw)) {
-        return true;
-      }
-    }
-    return false;
-    /* Is package specific needed? (Probably not) */
-/*    KeyValuePair<string, string>[] ignores = new KeyValuePair<string, string>[] {
-      KeyValuePair.Create("google-closure-compiler", "nightly"),
-      KeyValuePair.Create("typescript", "dev"),
-      KeyValuePair.Create("@graphql-codegen", "alpha")
-    };
-    foreach(KeyValuePair<string, string> kv in ignores) {
-      if (id.Contains(kv.Key) && v_l.Contains(kv.Value)) {
-        return true;
-      }
-    }*/
   }
 
   private void TryGetTarball(string id, string url) {
