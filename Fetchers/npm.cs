@@ -1,8 +1,10 @@
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using RestSharp;
 using System;
+using ShellProgressBar;
 
 namespace Stockpile.Fetchers {
 class Distribution {
@@ -20,58 +22,49 @@ class Package {
 }
 
 public class Npm : BaseFetcher {
-  private static readonly string[] VERSION_OUTLAWS = new string[] {
-    "alpha",
-    "beta",
-    "nightly",
-    "dev"
-  };
   private const string REGISTRY = "https://registry.npmjs.org/";
   private readonly RestClient client_ = new RestClient(REGISTRY);
   public Npm(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
   }
+  
 
   public override void Get(string id) {
-    depth_++;
-    SetStatus(id, Status.CHECK);
+    Depth++;
     Package pkg = GetPackage(id);
     /* Memorize to never visit this node again */
     this.Memorize(id);
+    SetText($"{id}");
     if (pkg == null || pkg.versions == null) {
-      SetStatus(id, Status.ERROR);
       this.SetError(id);
     } else {
       AddTransient(id, pkg);
     }
-    depth_--;
+    Depth--;
   }
 
   private void AddTransient(string id, Package pkg) {
     /* For each version, add each versions dependencies! */
+    this.AddToVersionCount(pkg.versions.Count);
     foreach(var kv in pkg.versions) {
       /* Should version be filtered? */
       if (!ExecFilters(id, kv.Key, 0, null)) {
+        this.AddToVersionCount(-1);
         continue;
       }
       Manifest manifest = kv.Value;
       string version = kv.Key;
       DBPackage db_pkg = db_.GetPackage(id, version);
       bool in_db = db_pkg != null;
-      bool is_processed = in_db && db_pkg.IsProcessed(); 
-      this.AddToVersionCount(1);
       /* If package already in database AND FULLY PROCESSED */
       /* Do not reprocess dependency tree. */
-      if (is_processed) {
+      if (in_db && db_pkg.IsProcessed()) {
         continue;
-      }
-
-      if (!in_db) {
+      } else if (!in_db) {
         string url = manifest.dist.tarball ?? "";
         this.db_.AddPackage(id, version, url);
       }
-
+      
       if (manifest.dependencies != null) {
-        SetStatus($"{id}@{kv.Key} ({manifest.dependencies.Count})", Status.PARSE);
         foreach(KeyValuePair<string, string> p in manifest.dependencies) {
           if (!this.InMemory(p.Key)) {
             Get(p.Key);
@@ -88,20 +81,28 @@ public class Npm : BaseFetcher {
     List<string> ids = (List<string>)db_.GetAllPackages();
     SetVersionCount(this.db_.GetVersionCount());
     SetPackageCount(this.db_.GetPackageCount());
+    bar_.MaxTicks = ids.Count;
+    SetText($"Downloading");
     Parallel.ForEach(ids, po_, (id) => {
       try {
+        bar_.Tick();
+        main_bar_.Tick();
         if (this.IsValid(id)) {
           ProcessVersions(id);
         }
       } catch (Exception ex) {
-        Console.WriteLine($"Error processing {id} - {ex}");
+        bar_.WriteErrorLine($"Error [{id}] - {ex}");
       }
     });
+    SetText($"Completed");
   }
 
   private void ProcessVersions(string id) {
-    IEnumerable<DBPackage> pkgs = this.db_.GetAllToDownload(id);
-    foreach(DBPackage pkg in pkgs) {
+    List<DBPackage> pkgs = (List<DBPackage>)this.db_.GetAllToDownload(id);
+    using ChildProgressBar bar = bar_.Spawn(pkgs.Count, id, bar_opts_);
+    for(int i = 0; i < pkgs.Count; i++) {
+      DBPackage pkg = pkgs[i];
+      bar.Tick($"{id}@{pkg.version} [{i}/{pkgs.Count}]");
       TryGetTarball(id, pkg.url);
     }
   }
@@ -113,7 +114,7 @@ public class Npm : BaseFetcher {
       }
       this.GetTarball(url);
     } catch (Exception ex) {
-      Console.WriteLine($"Error getting tarball {id} - {ex}");
+      bar_.WriteErrorLine($"Tarball error [{id}] - {ex}");
     }
   }
   
@@ -124,16 +125,13 @@ public class Npm : BaseFetcher {
     bool on_disk = OnDisk(out_fp);
     /* If not on disk and the download succeeded */
     if (!on_disk) {
-      SetStatus($"{fp}", Status.FETCH);
       if(Download(url, out_fp)) {
         this.CopyToDelta(fp);
       } else {
-        Console.WriteLine($"{url} download failed");
+        bar_.WriteErrorLine($"GetTarball error [{url}]");
       }
     } else {
-      //SetStatus($"{fp}", Status.EXISTS);
     }
-    this.AddBytes(out_fp);
   }
 
   private bool Download(string url, string out_fp) {
@@ -148,7 +146,7 @@ public class Npm : BaseFetcher {
       client_.DownloadData(req);
       fs.Close();
     } catch (Exception ex) {
-      Console.WriteLine($"Error downloading {url} - {ex}");
+      bar_.WriteErrorLine($"Download error [{url}] - {ex}");
       return false;
     }
     return true;
@@ -159,7 +157,7 @@ public class Npm : BaseFetcher {
     try {
       return client_.Get<Package>(CreateRequest($"{id}/")).Data; 
     } catch (Exception ex) {
-      Console.WriteLine($"Error getting metadata for {id} - {ex}");
+      bar_.WriteErrorLine($"Metadata error [{id}] - {ex}");
       return null;
     }
   }

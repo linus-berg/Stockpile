@@ -10,6 +10,7 @@ class Git : BaseFetcher  {
   }
 
   public override void Get(string id) {
+    SetText($"{id}");
     Uri uri = new Uri(id);
     
     string abs_path = Path.GetFullPath(this.cfg_.output.full);
@@ -20,7 +21,6 @@ class Git : BaseFetcher  {
       Directory.Delete(path, true);
     }
     Directory.CreateDirectory(path);
-    SetStatus($"{id}", Status.FETCH);
     CloneOptions co = new CloneOptions();
     co.IsBare = true;
     Repository.Clone(id, path, co);

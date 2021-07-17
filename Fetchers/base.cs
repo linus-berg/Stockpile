@@ -5,28 +5,37 @@ using NuGet.Common;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using ShellProgressBar;
 
 namespace Stockpile.Fetchers {
   public abstract class BaseFetcher {
-    protected enum Status {
-      CHECK = 0,
-      PARSE = 1,
-      FETCH = 2,
-      COMPLETE = 3,
-      ERROR = 4,
-      EXISTS = 5
-    };
     protected readonly Config.Main main_cfg_;
     protected readonly Config.Fetcher cfg_;
     protected readonly bool seeding_;
     protected readonly ParallelOptions po_;
-    protected int depth_ = 0; 
-    protected Utils utils_;    
-    
+    private int max_depth_ = 0;
+    private int depth_ = 0;
+    protected int Depth { 
+      get {
+        return depth_;
+      }
+      set {
+        if (value > max_depth_) {
+          max_depth_ = value;
+        }
+        depth_ = value;
+      }
+    }
     private int packages_ = 0;
     private int versions_ = 0;
-    private long bytes_delta_ = 0;
-    private long bytes_total_ = 0;
+    
+    protected static readonly ProgressBarOptions bar_opts_ = new ProgressBarOptions {
+      CollapseWhenFinished = true,
+      ProgressCharacter = '─'    
+    };
+
+    protected static readonly ProgressBar main_bar_ = new ProgressBar(0, "Stockpiling...", bar_opts_);
+    protected readonly ChildProgressBar bar_;
 
     /* List of found package ids */
     private HashSet<string> found_;
@@ -48,10 +57,9 @@ namespace Stockpile.Fetchers {
       this.found_ = new();
       this.error_ = new();
       this.db_ = Database.Open(cfg.id);
-      utils_ = new Utils(cfg.id);
+      this.bar_ = main_bar_.Spawn(0, cfg.id, bar_opts_);
       LoadFilters();
     }
-
 
     protected void LoadFilters() {
       if (cfg_.filters == null) {
@@ -75,6 +83,7 @@ namespace Stockpile.Fetchers {
     }
     
     protected void SetPackageCount(int c) {
+      main_bar_.MaxTicks = main_bar_.MaxTicks + c;
       packages_ = c;
     }
 
@@ -82,38 +91,8 @@ namespace Stockpile.Fetchers {
       return Path.Combine(Path.GetFullPath(dir), filename);
     }
 
-    protected void AddBytes(string file_path) {
-      Interlocked.Add(ref bytes_total_, GetBytes(file_path));
-    }
-
-    protected long GetBytes(string file_path) {
-      return new FileInfo(file_path).Length;
-    }
-
-    
-    protected void SetStatus(string id, Status status) {
-      string status_msg = status switch {
-        Status.CHECK => $"Metadata {id}",
-        Status.PARSE => $"Scanning {id}",
-        Status.FETCH => $"Download {id}",
-        Status.EXISTS => $"Existing {id}",
-        Status.ERROR => $"!!ERROR!! -- {id}",
-        Status.COMPLETE => "Complete!",
-        _ => "Unknown"
-      };
-      
-      utils_.Message(new Message {
-        message = status_msg,
-        bytes_total = bytes_total_ / (1024.0 * 1024.0),
-        bytes_delta = bytes_delta_ / (1024.0 * 1024.0),
-        packages = packages_,
-        versions = versions_,
-        depth = depth_
-      });
-    }
 
     ~BaseFetcher() {
-      SetStatus("", Status.COMPLETE);
     }
 
     protected bool ExecFilters(string id, string version, int downloads, string date) {
@@ -169,7 +148,6 @@ namespace Stockpile.Fetchers {
 
     protected void CopyToDelta(string fp) {
       string out_fp = GetOutFilePath(fp);
-      Interlocked.Add(ref this.bytes_delta_, GetBytes(out_fp));
       if (!this.seeding_) {
         string delta_fp = GetDeltaFilePath(fp);
         CreateFilePath(delta_fp);
@@ -200,6 +178,22 @@ namespace Stockpile.Fetchers {
 
     protected bool OnDisk(string path) {
       return File.Exists(path);
+    }
+
+    protected ChildProgressBar GetBar(int c) {
+      return main_bar_.Spawn(c, cfg_.id, bar_opts_);
+    }
+
+    private string AddWrapperText(string text) {
+      string prefix = "";
+      prefix += $"{cfg_.id,-6}";
+      prefix += $"Packages[{packages_}] Versions[{versions_}] ";
+      prefix += $"Depth[{depth_}/{max_depth_}] {text}";
+      return prefix;
+    }
+
+    protected void SetText(string text, bool wrap = true) {
+      bar_.Message = wrap ? AddWrapperText(text) : $"{cfg_.id, -6} {text}";
     }
 
     public abstract void Get(string id);

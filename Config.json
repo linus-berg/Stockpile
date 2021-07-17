@@ -2,9 +2,6 @@
   "db_path": "./Store/",
   "filters": {
     "npm-filter": {
-      "*": {
-        "version": "dev"
-      },
       "@graphql-codegen": {
         "version": "alpha"
       },
