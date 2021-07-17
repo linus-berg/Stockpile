@@ -86,21 +86,21 @@ public class Npm : BaseFetcher {
   public override void ProcessIds() {
     /* Parallel, max 5 concurrent fetchers */
     List<string> ids = (List<string>)db_.GetAllPackages();
+    SetVersionCount(this.db_.GetVersionCount());
+    SetPackageCount(this.db_.GetPackageCount());
     Parallel.ForEach(ids, po_, (id) => {
       try {
         if (this.IsValid(id)) {
           ProcessVersions(id);
         }
-      } catch (Exception) {
-        // Processing error for {id}, for now ignore.
+      } catch (Exception ex) {
+        Console.WriteLine($"Error processing {id} - {ex}");
       }
     });
   }
 
   private void ProcessVersions(string id) {
     IEnumerable<DBPackage> pkgs = this.db_.GetAllToDownload(id);
-    SetVersionCount(this.db_.GetVersionCount());
-    SetPackageCount(this.db_.GetPackageCount());
     foreach(DBPackage pkg in pkgs) {
       TryGetTarball(id, pkg.url);
     }
@@ -112,8 +112,8 @@ public class Npm : BaseFetcher {
         throw new ArgumentNullException($"{id} tarball is null.");
       }
       this.GetTarball(url);
-    } catch (Exception) {
-      // ignore
+    } catch (Exception ex) {
+      Console.WriteLine($"Error getting tarball {id} - {ex}");
     }
   }
   
@@ -131,7 +131,7 @@ public class Npm : BaseFetcher {
         Console.WriteLine($"{url} download failed");
       }
     } else {
-      SetStatus($"{fp}", Status.EXISTS);
+      //SetStatus($"{fp}", Status.EXISTS);
     }
     this.AddBytes(out_fp);
   }
@@ -147,7 +147,8 @@ public class Npm : BaseFetcher {
       };
       client_.DownloadData(req);
       fs.Close();
-    } catch (Exception) {
+    } catch (Exception ex) {
+      Console.WriteLine($"Error downloading {url} - {ex}");
       return false;
     }
     return true;
@@ -157,7 +158,8 @@ public class Npm : BaseFetcher {
   private Package GetPackage(string id) {
     try {
       return client_.Get<Package>(CreateRequest($"{id}/")).Data; 
-    } catch (Exception) {
+    } catch (Exception ex) {
+      Console.WriteLine($"Error getting metadata for {id} - {ex}");
       return null;
     }
   }

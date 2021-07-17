@@ -94,8 +94,10 @@ namespace Stockpile {
     }
 
     public IEnumerable<DBPackage> GetAllToDownload(string id) {
-      IEnumerable<DBPackage> packages = db_.Query<DBPackage>("SELECT * FROM packages WHERE id=@id AND processed=1", new { id });
-      return packages;
+      lock (db_) {
+        IEnumerable<DBPackage> packages = db_.Query<DBPackage>("SELECT * FROM packages WHERE id=@id AND processed=1", new { id });
+        return packages;
+      }
     }
 
     public DBPackage GetPackage(string id, string version) {
