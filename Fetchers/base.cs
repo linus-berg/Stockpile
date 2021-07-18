@@ -98,7 +98,7 @@ namespace Stockpile.Fetchers {
       packages_ = c;
     }
 
-    private string GetFilePath(string dir, string filename) {
+    private static string GetFilePath(string dir, string filename) {
       return Path.Combine(Path.GetFullPath(dir), filename);
     }
 
@@ -124,7 +124,7 @@ namespace Stockpile.Fetchers {
       return true;
     }
 
-    private bool ExecFilter(Config.Filter filter, string id, string version, int downloads, string date) {
+    private static bool ExecFilter(Config.Filter filter, string id, string version, int downloads, string date) {
       if (filter.version != null) {
         if (Regex.IsMatch(version, filter.version)) {
           return true;
@@ -146,7 +146,7 @@ namespace Stockpile.Fetchers {
     }
 
 
-    protected void CreateFilePath(string file_path) {
+    protected static void CreateFilePath(string file_path) {
       Directory.CreateDirectory(Path.GetDirectoryName(file_path));
     }
 
@@ -188,7 +188,7 @@ namespace Stockpile.Fetchers {
       return found_;
     }
 
-    protected bool OnDisk(string path) {
+    protected static bool OnDisk(string path) {
       return File.Exists(path);
     }
 

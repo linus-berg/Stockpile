@@ -160,11 +160,11 @@ namespace Stockpile.Fetchers {
       }
     }
 
-    private string StripRegistry(string url) {
+    private static string StripRegistry(string url) {
       return url.Replace(REGISTRY, "");
     }
 
-    private IRestRequest CreateRequest(string url, DataFormat fmt = DataFormat.Json) {
+    private static IRestRequest CreateRequest(string url, DataFormat fmt = DataFormat.Json) {
       return new RestRequest(url, fmt);
     }
   }
