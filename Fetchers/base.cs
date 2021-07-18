@@ -1,10 +1,10 @@
-using System;
-using System.IO;
-using System.Threading;
-using NuGet.Common;
-using System.Threading.Tasks;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using NuGet.Common;
 using ShellProgressBar;
 
 namespace Stockpile.Fetchers {
@@ -15,10 +15,8 @@ namespace Stockpile.Fetchers {
     protected readonly ParallelOptions po_;
     private int max_depth_ = 0;
     private int depth_ = 0;
-    protected int Depth { 
-      get {
-        return depth_;
-      }
+    protected int Depth {
+      get => depth_;
       set {
         if (value > max_depth_) {
           max_depth_ = value;
@@ -28,11 +26,19 @@ namespace Stockpile.Fetchers {
     }
     private int packages_ = 0;
     private int versions_ = 0;
-    
+
     protected static readonly ProgressBarOptions bar_opts_ = new ProgressBarOptions {
       CollapseWhenFinished = true,
-      ProgressCharacter = '─'    
+      ProgressCharacter = '─'
     };
+
+    public void Start() {
+      foreach (var line in package_list_) {
+        Get(line);
+        main_bar_.Tick();
+      }
+      ProcessIds();
+    }
 
     protected static readonly ProgressBar main_bar_ = new ProgressBar(0, "Stockpiling...", bar_opts_);
     protected readonly ChildProgressBar bar_;
@@ -42,22 +48,27 @@ namespace Stockpile.Fetchers {
     private HashSet<string> error_;
     private Dictionary<string, Config.Filter> filters_;
     protected ILogger logger_ = NullLogger.Instance;
-    protected CancellationToken ct_ = CancellationToken.None; 
-    
+    protected CancellationToken ct_ = CancellationToken.None;
+    protected readonly string[] package_list_;
+    protected readonly int package_count_;
     protected readonly Database db_;
 
     protected BaseFetcher(Config.Main main_cfg, Config.Fetcher cfg) {
-      this.main_cfg_ = main_cfg;
-      this.cfg_ = cfg;
-      this.po_ = new ParallelOptions {
+      package_list_ = File.ReadAllLines(cfg.input);
+      package_count_ = package_list_.Length;
+      main_bar_.MaxTicks = main_bar_.MaxTicks + package_count_;
+
+      main_cfg_ = main_cfg;
+      cfg_ = cfg;
+      po_ = new ParallelOptions {
         MaxDegreeOfParallelism = cfg.threading.parallel_pkg
       };
-      this.seeding_ = main_cfg_.staging;
-      this.filters_ = new();
-      this.found_ = new();
-      this.error_ = new();
-      this.db_ = Database.Open(cfg.id);
-      this.bar_ = main_bar_.Spawn(0, cfg.id, bar_opts_);
+      seeding_ = main_cfg_.staging;
+      filters_ = new();
+      found_ = new();
+      error_ = new();
+      db_ = Database.Open(cfg.id);
+      bar_ = main_bar_.Spawn(0, cfg.id, bar_opts_);
       LoadFilters();
     }
 
@@ -65,15 +76,15 @@ namespace Stockpile.Fetchers {
       if (cfg_.filters == null) {
         return;
       }
-      foreach(string group_id in cfg_.filters) {
-        Dictionary<string, Config.Filter> filter_group = main_cfg_.filters[group_id];
+      foreach (var group_id in cfg_.filters) {
+        var filter_group = main_cfg_.filters[group_id];
         /* Add all active filter groups. */
-        foreach(KeyValuePair<string, Config.Filter> filter in filter_group) {
-          this.filters_[filter.Key] = filter.Value;
+        foreach (var filter in filter_group) {
+          filters_[filter.Key] = filter.Value;
         }
       }
     }
-    
+
     protected void AddToVersionCount(int c) {
       versions_ += c;
     }
@@ -81,7 +92,7 @@ namespace Stockpile.Fetchers {
     protected void SetVersionCount(int c) {
       versions_ = c;
     }
-    
+
     protected void SetPackageCount(int c) {
       main_bar_.MaxTicks = main_bar_.MaxTicks + c;
       packages_ = c;
@@ -91,8 +102,9 @@ namespace Stockpile.Fetchers {
       return Path.Combine(Path.GetFullPath(dir), filename);
     }
 
-
     ~BaseFetcher() {
+      main_bar_.WriteLine($"{cfg_.id} done.");
+      bar_.Dispose();
     }
 
     protected bool ExecFilters(string id, string version, int downloads, string date) {
@@ -105,7 +117,7 @@ namespace Stockpile.Fetchers {
 
       /* Global filters */
       if (filters_.ContainsKey("*")) {
-        if(ExecFilter(filters_["*"], id, version, downloads, date)) {
+        if (ExecFilter(filters_["*"], id, version, downloads, date)) {
           return false;
         }
       }
@@ -116,7 +128,7 @@ namespace Stockpile.Fetchers {
       if (filter.version != null) {
         if (Regex.IsMatch(version, filter.version)) {
           return true;
-        }  
+        }
       }
 
       if (filter.min_downloads > 0 && downloads < filter.min_downloads) {
@@ -124,8 +136,8 @@ namespace Stockpile.Fetchers {
       }
 
       if (filter.min_date != null) {
-        DateTime filter_date = DateTime.Parse(filter.min_date);
-        DateTime package_date = DateTime.Parse(date);
+        var filter_date = DateTime.Parse(filter.min_date);
+        var package_date = DateTime.Parse(date);
         if (filter_date > package_date) {
           return true;
         }
@@ -139,41 +151,41 @@ namespace Stockpile.Fetchers {
     }
 
     protected string GetOutFilePath(string filename) {
-      return GetFilePath(this.cfg_.output.full, filename);
+      return GetFilePath(cfg_.output.full, filename);
     }
 
     protected string GetDeltaFilePath(string filepath) {
-      return GetFilePath(this.cfg_.output.delta, filepath);
+      return GetFilePath(cfg_.output.delta, filepath);
     }
 
     protected void CopyToDelta(string fp) {
-      string out_fp = GetOutFilePath(fp);
-      if (!this.seeding_) {
-        string delta_fp = GetDeltaFilePath(fp);
+      var out_fp = GetOutFilePath(fp);
+      if (!seeding_) {
+        var delta_fp = GetDeltaFilePath(fp);
         CreateFilePath(delta_fp);
-        File.Copy(out_fp, delta_fp); 
+        File.Copy(out_fp, delta_fp);
       }
     }
 
     protected bool InMemory(string id) {
-      return this.found_.Contains(id);
+      return found_.Contains(id);
     }
-    
+
     protected void Memorize(string id) {
-      this.packages_++;
-      this.found_.Add(id); 
+      packages_++;
+      found_.Add(id);
     }
 
     protected void SetError(string id) {
-      this.error_.Add(id);
+      error_.Add(id);
     }
 
     protected bool IsValid(string id) {
-      return !this.error_.Contains(id);
+      return !error_.Contains(id);
     }
 
     protected HashSet<string> GetMemory() {
-      return this.found_;
+      return found_;
     }
 
     protected bool OnDisk(string path) {
@@ -185,7 +197,7 @@ namespace Stockpile.Fetchers {
     }
 
     private string AddWrapperText(string text) {
-      string prefix = "";
+      var prefix = "";
       prefix += $"{cfg_.id,-6}";
       prefix += $"Packages[{packages_}] Versions[{versions_}] ";
       prefix += $"Depth[{depth_}/{max_depth_}] {text}";
@@ -193,7 +205,7 @@ namespace Stockpile.Fetchers {
     }
 
     protected void SetText(string text, bool wrap = true) {
-      bar_.Message = wrap ? AddWrapperText(text) : $"{cfg_.id, -6} {text}";
+      bar_.Message = wrap ? AddWrapperText(text) : $"{cfg_.id,-6} {text}";
     }
 
     public abstract void Get(string id);
