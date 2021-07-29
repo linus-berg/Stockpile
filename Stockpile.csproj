@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
+    <DefaultItemExcludes>PACKAGES\**;DELTA\**;$(DefaultItemExcludes)</DefaultItemExcludes>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
@@ -14,6 +16,11 @@
     <PackageReference Include="NuGet.Versioning" Version="5.9.1" />
     <PackageReference Include="RestSharp" Version="106.11.7" />
     <PackageReference Include="ShellProgressBar" Version="5.1.0" />
+    <PackageReference Include="System.Collections" Version="4.3.0" />
+    <PackageReference Include="System.Diagnostics.Debug" Version="4.3.0" />
+    <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
+    <PackageReference Include="System.Runtime.Extensions" Version="4.3.0" />
+    <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Store\*.sql">
