@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CommandLine;
 using Stockpile.Fetchers;
+using ShellProgressBar;
 
 namespace Stockpile {
   class Program {
@@ -12,6 +13,10 @@ namespace Stockpile {
     const string DELTA_DIR_NAME = "{0}{1}";
     const string DATE_FMT = "yyyyMMddHHmmssff";
     static readonly DateTime RUNTIME = DateTime.UtcNow;
+  private static readonly ProgressBarOptions bar_opts_ = new ProgressBarOptions {
+    CollapseWhenFinished = true,
+    ProgressCharacter = '─'
+  };
 
     static int Main(string[] args) {
       Parser.Default.ParseArguments<CLI.Options>(args).WithParsed(Run);
@@ -40,15 +45,13 @@ namespace Stockpile {
       Task.WaitAll(tasks.ToArray());
     }
 
-    static Task CreateFetcherTask(Config.Main cfg, Config.Fetcher cfg_fetcher) {
+    static async Task CreateFetcherTask(Config.Main cfg, Config.Fetcher cfg_fetcher) {
       var fetcher = GetFetcherType(cfg, cfg_fetcher);
-      return Task.Run(() => {
-        try {
-          fetcher.Start();
-        } catch (Exception e) {
-          Console.WriteLine(e);
-        }
-      });
+      try {
+        await fetcher.Start();
+      } catch (Exception e) {
+        Console.WriteLine(e);
+      }
     }
 
     static BaseFetcher GetFetcherType(Config.Main main_cfg, Config.Fetcher cfg) {

@@ -32,12 +32,13 @@ namespace Stockpile.Fetchers {
       ProgressCharacter = '─'
     };
 
-    public void Start() {
+    public Task Start() {
       foreach (var line in package_list_) {
         Get(line);
         main_bar_.Tick();
       }
       ProcessIds();
+      return Task.CompletedTask;
     }
 
     protected static readonly ProgressBar main_bar_ = new ProgressBar(0, "Stockpiling...", bar_opts_);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using RestSharp;
+using ShellProgressBar;
 
 namespace Stockpile.Fetchers {
   class Distribution {
@@ -86,7 +87,7 @@ namespace Stockpile.Fetchers {
           bar_.Tick();
           main_bar_.Tick();
           if (IsValid(id)) {
-            ProcessVersions(id);
+            ProcessVersions(id).Wait();
           }
         } catch (Exception ex) {
           bar_.WriteErrorLine($"Error [{id}] - {ex}");
@@ -95,35 +96,36 @@ namespace Stockpile.Fetchers {
       SetText($"Completed");
     }
 
-    private void ProcessVersions(string id) {
+    private async Task ProcessVersions(string id) {
       var pkgs = (List<DBPackage>)db_.GetAllToDownload(id);
       using var bar = bar_.Spawn(pkgs.Count, id, bar_opts_);
       for (var i = 0; i < pkgs.Count; i++) {
         var pkg = pkgs[i];
         bar.Tick($"{id}@{pkg.version} [{i}/{pkgs.Count}]");
-        TryGetTarball(id, pkg.url);
+        await TryGetTarball(id, pkg.url, bar);
       }
     }
 
-    private void TryGetTarball(string id, string url) {
+    private async Task TryGetTarball(string id, string url, ChildProgressBar bar) {
       try {
         if (url == null || url == "") {
           throw new ArgumentNullException($"{id} tarball is null.");
         }
-        GetTarball(url);
+        await GetTarball(url, bar);
       } catch (Exception ex) {
         bar_.WriteErrorLine($"Tarball error [{id}] - {ex}");
       }
     }
 
-    private void GetTarball(string url) {
+    private async Task GetTarball(string url, ChildProgressBar bar) {
       var fp = StripRegistry(url).Replace("/-/", "/");
       var out_fp = GetOutFilePath(fp);
       CreateFilePath(out_fp);
       var on_disk = OnDisk(out_fp);
       /* If not on disk and the download succeeded */
       if (!on_disk) {
-        if (Download(url, out_fp)) {
+        RemoteFile file = new RemoteFile(url, bar);
+        if (await file.Get(out_fp)) {
           CopyToDelta(fp);
         } else {
           bar_.WriteErrorLine($"GetTarball error [{url}]");
@@ -131,25 +133,6 @@ namespace Stockpile.Fetchers {
       } else {
       }
     }
-
-    private bool Download(string url, string out_fp) {
-      try {
-        using var fs = File.OpenWrite(out_fp);
-        var req = CreateRequest(url, DataFormat.None);
-        req.ResponseWriter = stream => {
-          using (stream) {
-            stream.CopyTo(fs);
-          }
-        };
-        client_.DownloadData(req);
-        fs.Close();
-      } catch (Exception ex) {
-        bar_.WriteErrorLine($"Download error [{url}] - {ex}");
-        return false;
-      }
-      return true;
-    }
-
 
     private Package GetPackage(string id) {
       try {

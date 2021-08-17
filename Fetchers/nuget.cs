@@ -58,20 +58,22 @@ namespace Stockpile.Fetchers {
         try {
           bar_.Tick();
           main_bar_.Tick();
-          ProcessVersions(id);
-        } catch (Exception) {
-          // Processing error for {id}, for now ignore.
+          if (IsValid(id)) {
+            ProcessVersions(id).Wait();
+          }
+        } catch (Exception ex) {
+          bar_.WriteErrorLine($"Error [{id}] - {ex}");
         }
       });
       SetText($"Completed");
     }
 
-    private void ProcessVersions(string id) {
+    private async Task ProcessVersions(string id) {
       var pkgs = (List<DBPackage>)db_.GetAllToDownload(id);
       using var bar = bar_.Spawn(pkgs.Count, id, bar_opts_);
       foreach (var pkg in pkgs) {
         bar.Tick($"{id}@{pkg.version}");
-        GetNupkg(pkg.id, pkg.version);
+        await GetNupkg(pkg.id, pkg.version);
       }
     }
 
@@ -96,7 +98,7 @@ namespace Stockpile.Fetchers {
       ).Result;
     }
 
-    private void GetNupkg(string id, string version) {
+    private async Task GetNupkg(string id, string version) {
       var filename = $"{id}/{id}.{version}.nupkg";
       var out_file = GetOutFilePath(filename);
       CreateFilePath(out_file);
@@ -105,8 +107,7 @@ namespace Stockpile.Fetchers {
       }
       using var fs = File.OpenWrite(out_file);
       var v = new NuGetVersion(version);
-      Task t = resource_.CopyNupkgToStreamAsync(id, v, fs, cache_, logger_, ct_);
-      Task.WaitAll(t);
+      await resource_.CopyNupkgToStreamAsync(id, v, fs, cache_, logger_, ct_);
       fs.Close();
       CopyToDelta(filename);
     }
