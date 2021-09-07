@@ -4,7 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using CommandLine;
-using Stockpile.Fetchers;
+using Stockpile.Channels;
 using ShellProgressBar;
 
 namespace Stockpile {
@@ -37,24 +37,24 @@ namespace Stockpile {
       /* Setup database storage location */
       Database.SetDatabaseDir(cfg.db_path);
 
-      var fetchers = new List<BaseFetcher>();
+      var fetchers = new List<BaseChannel>();
       var tasks = new List<Task>();
       foreach (var cfg_fetcher in cfg.fetchers) {
-        tasks.Add(CreateFetcherTask(cfg, cfg_fetcher));
+        tasks.Add(CreateChannelTask(cfg, cfg_fetcher));
       }
       Task.WaitAll(tasks.ToArray());
     }
 
-    static async Task CreateFetcherTask(Config.Main cfg, Config.Fetcher cfg_fetcher) {
-      var fetcher = GetFetcherType(cfg, cfg_fetcher);
+    static async Task CreateChannelTask(Config.Main cfg, Config.Fetcher cfg_fetcher) {
+      var ch = GetChannel(cfg, cfg_fetcher);
       try {
-        await fetcher.Start();
+        await ch.Start();
       } catch (Exception e) {
         Console.WriteLine(e);
       }
     }
 
-    static BaseFetcher GetFetcherType(Config.Main main_cfg, Config.Fetcher cfg) {
+    static BaseChannel GetChannel(Config.Main main_cfg, Config.Fetcher cfg) {
       var output = cfg.output;
       cfg.output.delta = cfg.output.delta + RUNTIME.ToString(DATE_FMT) + '/';
 

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using ShellProgressBar;
 
 
-namespace Stockpile.Fetchers {
+namespace Stockpile.Channels {
 internal class RemoteFile {
   private static readonly HttpClient CLIENT_ = new HttpClient();
   private static readonly ProgressBarOptions bar_opts_ = new ProgressBarOptions {

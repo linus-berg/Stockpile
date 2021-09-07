@@ -4,21 +4,26 @@ using LibGit2Sharp;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-namespace Stockpile.Fetchers {
+namespace Stockpile.Channels {
 
-  class Git : BaseFetcher {
+  class Git : BaseChannel {
     
-    public Git(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
+    public Git(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg, FileFormat) {
       bar_.MaxTicks = package_count_;
     }
 
-    public override void Get(string id) {
+    private static string FileFormat(DBPackage pkg) {
+      return "";
+    }
+
+    public override Task Get(string id) {
       SetText($"{id}");
-      Memorize(id);
+      memory_.Add(id);
+      return Task.CompletedTask;
     }
 
     public override void ProcessIds() {
-      HashSet<string> ids = this.GetMemory();
+      HashSet<string> ids = memory_.GetMemory();
       foreach(string id in ids) {
         ProcessRepo(id);
       }

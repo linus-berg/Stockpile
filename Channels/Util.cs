@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace Stockpile.Fetchers {
+namespace Stockpile.Channels {
   public class Message {
     public double bytes_total;
     public double bytes_delta;
@@ -9,6 +9,7 @@ namespace Stockpile.Fetchers {
     public int versions;
     public int depth;
   }
+
   public class Utils {
     private readonly string SYSTEM_;
     private readonly DateTime START_TIME_;

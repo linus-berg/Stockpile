@@ -1,5 +1,5 @@
 {
-  "db_path": "./Store/",
+  "db_path": "./Storage/",
   "filters": {
     "npm-filter": {
       "@graphql-codegen": {
@@ -26,8 +26,8 @@
       },
       "input": "./NPM.txt",
       "output": {
-        "full": "./PACKAGES/NPM/",
-        "delta": "./DELTA/NPM/"
+        "full": "../PACKAGES/NPM/",
+        "delta": "../DELTA/NPM/"
       }
     },
     {
@@ -39,8 +39,8 @@
       },
       "input": "./GIT.txt",
       "output": {
-        "full": "./PACKAGES/GIT/",
-        "delta": "./DELTA/GIT/"
+        "full": "../PACKAGES/GIT/",
+        "delta": "../DELTA/GIT/"
       }
     },
     {
@@ -52,8 +52,8 @@
       },
       "input": "./NUGET.txt",
       "output": {
-        "full": "./PACKAGES/NUGET/",
-        "delta": "./DELTA/NUGET/"
+        "full": "../PACKAGES/NUGET/",
+        "delta": "../DELTA/NUGET/"
       }
     }
   ]
