@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Common;
 using ShellProgressBar;
+using Stockpile.Services;
 
 namespace Stockpile.Channels {
   public abstract class BaseChannel {
@@ -16,8 +17,7 @@ namespace Stockpile.Channels {
     private int depth_ = 0;
     protected Memory memory_;
     protected Filter filter_;
-    protected delegate string FileFormatter(DBPackage pkg);
-    private FileFormatter file_fmt_;
+    protected FileService fs_;
 
     protected int Depth {
       get => depth_;
@@ -46,7 +46,7 @@ namespace Stockpile.Channels {
     protected readonly int package_count_;
     protected readonly Database db_;
 
-    protected BaseChannel(Config.Main main_cfg, Config.Fetcher cfg, FileFormatter fmt) {
+    protected BaseChannel(Config.Main main_cfg, Config.Fetcher cfg) {
       package_list_ = File.ReadAllLines(cfg.input);
       package_count_ = package_list_.Length;
       main_bar_.MaxTicks = main_bar_.MaxTicks + package_count_;
@@ -58,9 +58,14 @@ namespace Stockpile.Channels {
       seeding_ = main_cfg_.staging;
       memory_ = new Memory();
       filter_ = new Filter(main_cfg, cfg);
-      file_fmt_ = fmt;
+      fs_ = new FileService(main_cfg, cfg);
       db_ = Database.Open(cfg.id);
       bar_ = main_bar_.Spawn(0, cfg.id, bar_opts_);
+    }
+    
+    ~BaseChannel() {
+      main_bar_.WriteLine($"{cfg_.id} done.");
+      bar_.Dispose();
     }
     
     public async Task Start() {
@@ -84,36 +89,7 @@ namespace Stockpile.Channels {
       memory_.SetCount(c);
     }
 
-    private static string GetFilePath(string dir, string filename) {
-      return Path.Combine(Path.GetFullPath(dir), filename);
-    }
 
-    ~BaseChannel() {
-      main_bar_.WriteLine($"{cfg_.id} done.");
-      bar_.Dispose();
-    }
-
-    protected static void CreateFilePath(string file_path) {
-      Directory.CreateDirectory(Path.GetDirectoryName(file_path));
-    }
-
-    protected string GetOutFilePath(string filename) {
-      return GetFilePath(cfg_.output.full, filename);
-    }
-
-    protected string GetDeltaFilePath(string filepath) {
-      return GetFilePath(cfg_.output.delta, filepath);
-    }
-
-    protected void CopyToDelta(string fp) {
-      var out_fp = GetOutFilePath(fp);
-      if (!seeding_) {
-        var delta_fp = GetDeltaFilePath(fp);
-        CreateFilePath(delta_fp);
-        File.Copy(out_fp, delta_fp);
-      }
-    }
-    
     protected bool IsProcessed(string id, string version, string url) {
       DBPackage db_pkg = db_.GetPackage(id, version);
       if (db_pkg != null && db_pkg.IsProcessed()) {
@@ -122,10 +98,6 @@ namespace Stockpile.Channels {
         db_.AddPackage(id, version, url);
       }
       return false;
-    }
-
-    protected static bool OnDisk(string path) {
-      return File.Exists(path);
     }
 
     protected ChildProgressBar GetBar(int c) {
@@ -173,7 +145,7 @@ namespace Stockpile.Channels {
       for (var i = 0; i < pkgs.Count; i++) {
         var pkg = pkgs[i];
         bar.Tick($"{id}@{pkg.version} [{i}/{pkgs.Count}]");
-        await TryDownload(pkg, file_fmt_(pkg), bar);
+        await TryDownload(pkg, GetFilePath(pkg), bar);
       }
     }
     
@@ -191,14 +163,14 @@ namespace Stockpile.Channels {
 
     /* Download remote file. */
     private async Task Download(DBPackage pkg, string path, IProgressBar bar) {
-      var out_fp = GetOutFilePath(path);
-      CreateFilePath(out_fp);
-      var on_disk = OnDisk(out_fp);
+      string out_fp = fs_.GetMainFilePath(path);
+      FileService.CreateDirectory(out_fp);
+      bool on_disk = FileService.OnDisk(out_fp);
       /* If not on disk and the download succeeded */
       if (!on_disk) {
         RemoteFile file = new RemoteFile(pkg.url, bar);
         if (await file.Get(out_fp)) {
-          CopyToDelta(path);
+          fs_.CopyToDelta(path);
         } else {
           bar_.WriteErrorLine($"GetTarball error [{pkg.url}]");
         }
@@ -207,5 +179,6 @@ namespace Stockpile.Channels {
     }
 
     public abstract Task Get(string id);
+    protected abstract string GetFilePath(DBPackage pkg);
   }
 }

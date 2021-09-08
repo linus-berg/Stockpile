@@ -8,11 +8,11 @@ namespace Stockpile.Channels {
 
   class Git : BaseChannel {
     
-    public Git(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg, FileFormat) {
+    public Git(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
       bar_.MaxTicks = package_count_;
     }
 
-    private static string FileFormat(DBPackage pkg) {
+    protected override string GetFilePath(DBPackage pkg) {
       return "";
     }
 

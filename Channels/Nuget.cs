@@ -15,14 +15,14 @@ namespace Stockpile.Channels {
     private FindPackageByIdResource resource_;
     private SourceCacheContext cache_;
 
-    public Nuget(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg, FileFormat) {
+    public Nuget(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
       repository_ = Repository.Factory.GetCoreV3(API_);
       meta_res_ = repository_.GetResource<PackageMetadataResource>();
       resource_ = repository_.GetResource<FindPackageByIdResource>();
       cache_ = new SourceCacheContext();
     }
 
-    private static string FileFormat(DBPackage pkg) {
+    protected override string GetFilePath(DBPackage pkg) {
       return $"{pkg.id}/{pkg.id}.{pkg.version}.nupkg";
     }
     

@@ -21,10 +21,11 @@ namespace Stockpile.Channels {
   public class Npm : BaseChannel {
     private const string API_ = "https://registry.npmjs.org/";
     private readonly RestClient client_ = new RestClient(API_);
-    public Npm(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg, FileFormat) {
+    public Npm(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
     }
+    
 
-    private static string FileFormat(DBPackage pkg) {
+    protected override string GetFilePath(DBPackage pkg) {
       return StripRegistry(pkg.url).Replace("/-/", "/");
     }
     
