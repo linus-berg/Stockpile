@@ -69,11 +69,22 @@ namespace Stockpile.Channels {
     }
     
     public async Task Start() {
-      foreach (var line in package_list_) {
-        await Get(line);
+      foreach (var id in package_list_) {
+        if (!string.IsNullOrEmpty(id)) {
+          await TryGet(id);
+        }
         main_bar_.Tick();
       }
       ProcessIds();
+    }
+    
+    public async Task TryGet(string id) {
+      try {
+        await Get(id);
+      } catch (Exception e) {
+        main_bar_.WriteErrorLine($"Could not fetch {id}.");
+        main_bar_.WriteErrorLine(e.ToString());
+      }
     }
 
     protected void AddToVersionCount(int c) {
