@@ -16,7 +16,7 @@ internal class RemoteFile {
   private readonly IProgressBar BAR_;
   const int BUFFER_SIZE = 8192;
   
-  public RemoteFile(string url, IProgressBar bar) {
+  public RemoteFile(string url, IProgressBar bar = null) {
     URL_ = url;
     BAR_ = bar;
   }
@@ -40,17 +40,22 @@ internal class RemoteFile {
 
   private async Task ProcessStream(Stream s, int size, string filepath) {
     using FileStream fs = new FileStream(filepath, FileMode.Create, FileAccess.Write, FileShare.None, BUFFER_SIZE, true);
-
+    
+    IProgress<double> progress = null;
     /* Progress */
-    IProgressBar bar = BAR_.Spawn(size, URL_, bar_opts_);
-    IProgress<double> progress = bar.AsProgress<double>();
+    if (BAR_ != null) {
+      IProgressBar bar = BAR_.Spawn(size, URL_, bar_opts_);
+      progress = bar.AsProgress<double>();
+    }
     int total = 0;
     int read = -1;
     byte[] buffer = new byte[BUFFER_SIZE];
     while (read != 0) {
       read = await s.ReadAsync(buffer, 0, buffer.Length);
       total += read;
-      progress.Report(1.0 * total / size); 
+      if (progress != null) {
+        progress.Report(1.0 * total / size); 
+      }
       if (read == 0) {
         break;
       }

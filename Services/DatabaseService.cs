@@ -5,7 +5,7 @@ using Dapper;
 using Dapper.Contrib.Extensions;
 using Microsoft.Data.Sqlite;
 
-namespace Stockpile {
+namespace Stockpile.Services {
   [Table("packages")]
   public class DBPackage {
     [ExplicitKey]
@@ -17,7 +17,7 @@ namespace Stockpile {
   }
 
 
-  public class Database {
+  public class DatabaseService {
     private static string db_storage_;
     private readonly string db_path_;
     private readonly SqliteConnection db_;
@@ -27,17 +27,17 @@ namespace Stockpile {
       Directory.CreateDirectory(db_storage_);
     }
 
-    public static Database Open(string type) {
+    public static DatabaseService Open(string type) {
       var db_str = db_storage_ + type + ".sqlite";
       var exists = File.Exists(db_str);
-      var db = new Database(db_str);
+      var db = new DatabaseService(db_str);
       if (!exists) {
         db.Init();
       }
       return db;
     }
 
-    private Database(string path) {
+    private DatabaseService(string path) {
       db_path_ = path;
       db_ = new SqliteConnection($"Data Source={path}");
       db_.Open();
@@ -51,7 +51,7 @@ namespace Stockpile {
       }
     }
 
-    ~Database() {
+    ~DatabaseService() {
       db_.Close();
     }
 

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 
-namespace Stockpile.Channels {
-  public class Memory {
+namespace Stockpile.Services {
+  public class MemoryService {
     protected readonly Config.Main main_cfg_;
     protected readonly Config.Fetcher cfg_;
     private int packages_ = 0;
@@ -9,9 +9,9 @@ namespace Stockpile.Channels {
     /* List of found package ids */
     private HashSet<string> found_;
     private HashSet<string> error_;
-    protected readonly Database db_;
+    protected readonly DatabaseService db_;
 
-    public Memory() {
+    public MemoryService() {
       found_ = new();
       error_ = new();
     }

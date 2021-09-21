@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Stockpile.Services;
 using RestSharp;
 
 namespace Stockpile.Channels {
@@ -33,10 +34,10 @@ namespace Stockpile.Channels {
       Depth++;
       var pkg = await GetPackage(id);
       /* Memorize to never visit this node again */
-      memory_.Add(id);
-      SetText($"{id}");
+      ms_.Add(id);
+      Update($"[SCAN][{id}]");
       if (pkg == null || pkg.versions == null) {
-        memory_.SetError(id);
+        ms_.SetError(id);
       } else {
         await AddTransient(id, pkg);
       }
@@ -45,11 +46,9 @@ namespace Stockpile.Channels {
 
     private async Task AddTransient(string id, Package pkg) {
       /* For each version, add each versions dependencies! */
-      AddToVersionCount(pkg.versions.Count);
       foreach (var kv in pkg.versions) {
         /* Should version be filtered? */
-        if (!filter_.Exec(id, kv.Key, 0, null)) {
-          AddToVersionCount(-1);
+        if (!fi_.Exec(id, kv.Key, 0, null)) {
           continue;
         }
         var manifest = kv.Value;
@@ -62,7 +61,7 @@ namespace Stockpile.Channels {
         }
         if (manifest.dependencies != null) {
           foreach (var p in manifest.dependencies) {
-            if (!memory_.Exists(p.Key)) {
+            if (!ms_.Exists(p.Key)) {
               await Get(p.Key);
             }
           }
@@ -76,7 +75,7 @@ namespace Stockpile.Channels {
       try {
         return await client_.GetAsync<Package>(CreateRequest($"{id}/"));
       } catch (Exception ex) {
-        bar_.WriteErrorLine($"Metadata error [{id}] - {ex}");
+        ds_.Error($"[ERROR][NPM]Metadata][{id}] - {ex}");
         return null;
       }
     }

@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using NuGet.Packaging;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
+using Stockpile.Services;
 
 namespace Stockpile.Channels {
 
@@ -27,12 +27,11 @@ namespace Stockpile.Channels {
     }
     
     public override async Task Get(string id) {
-      SetText($"Scanning {id}");
+      Update($"[SCAN][{id}]");
       Depth++;
       /* Memorize to not check again */
-      memory_.Add(id);
+      ms_.Add(id);
       var versions = await GetMetadata(id);
-      AddToVersionCount(Enumerable.Count(versions));
       foreach (var version in versions) {
         string v = version.Identity.Version.ToString();
         string u = NUGET_ + $"{id}/{v}/{id}.{v}.nupkg";
@@ -49,7 +48,7 @@ namespace Stockpile.Channels {
     private async Task AddTransient(IEnumerable<PackageDependencyGroup> deps) {
       foreach (var x in deps) {
         foreach (var pkg in x.Packages) {
-          if (!memory_.Exists(pkg.Id)) {
+          if (!ms_.Exists(pkg.Id)) {
             await Get(pkg.Id);
           }
         }

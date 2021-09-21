@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace Stockpile.Channels {
-  public class Filter {
+namespace Stockpile.Services {
+  public class FilterService {
     protected readonly Config.Main main_cfg_;
     protected readonly Config.Fetcher cfg_;
 
     /* List of found package ids */
     private Dictionary<string, Config.Filter> filters_;
 
-    public Filter(Config.Main main_cfg, Config.Fetcher cfg) {
+    public FilterService(Config.Main main_cfg, Config.Fetcher cfg) {
 
       main_cfg_ = main_cfg;
       cfg_ = cfg;

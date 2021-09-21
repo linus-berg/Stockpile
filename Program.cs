@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CommandLine;
 using Stockpile.Channels;
+using Stockpile.Services;
 using ShellProgressBar;
 
 namespace Stockpile {
@@ -35,7 +36,7 @@ namespace Stockpile {
       cfg.staging = opt.staging || cfg.staging;
 
       /* Setup database storage location */
-      Database.SetDatabaseDir(cfg.db_path);
+      DatabaseService.SetDatabaseDir(cfg.db_path);
 
       var fetchers = new List<BaseChannel>();
       var tasks = new List<Task>();
