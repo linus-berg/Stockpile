@@ -35,7 +35,7 @@ namespace Stockpile.Channels {
       var pkg = await GetPackage(id);
       /* Memorize to never visit this node again */
       ms_.Add(id);
-      Update($"[SCAN][{id}]");
+      Update(id, "INSPECT");
       if (pkg == null || pkg.versions == null) {
         ms_.SetError(id);
       } else {

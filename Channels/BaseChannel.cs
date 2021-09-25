@@ -44,7 +44,8 @@ namespace Stockpile.Channels {
       cfg_ = cfg;
       /* Services */
       db_ = DatabaseService.Open(cfg.id);
-      ds_ = new BarDisplayService(cfg.id);
+      ds_ = main_cfg.progress_bars ? new BarDisplayService(cfg.id) : 
+                                     new ConsoleDisplayService(cfg.id);
       fs_ = new FileService(main_cfg, cfg);
       fi_ = new FilterService(main_cfg, cfg);
       ms_ = new MemoryService();
@@ -78,9 +79,10 @@ namespace Stockpile.Channels {
       return false;
     }
     
-    protected void Update(string msg) {
+    protected void Update(string msg, string op) {
       ds_.Update(new DisplayInfo () {
         Message = msg,
+        Operation = op,
         Packages = ms_.GetCount(), 
         Versions = versions_, 
         Depth = depth_, 
@@ -99,16 +101,13 @@ namespace Stockpile.Channels {
       ms_.SetCount(p_c);
       ds_.AddToCount(v_c);
       ds_.SetChannelCount(v_c);
-
-      Update("[DOWNLOADING]");
-
       /* Process all IDs in parallel based on configuration */
       Parallel.ForEach(ids, new ParallelOptions {
           MaxDegreeOfParallelism = cfg_.threading.parallel_pkg
         }, (id) => {
         TryProcessId(id).Wait();
       });
-      Update("[COMPLETED]");
+      Update("", "COMPLETED");
     }
 
     private async Task TryProcessId(string id) {
@@ -150,7 +149,7 @@ namespace Stockpile.Channels {
       bool on_disk = FileService.OnDisk(out_fp);
       /* If not on disk and the download succeeded */
       if (!on_disk) {
-        RemoteFile file = new RemoteFile(pkg.url);
+        RemoteFile file = new RemoteFile(pkg.url, ds_);
         if (await file.Get(out_fp)) {
           fs_.CopyToDelta(path);
         } else {

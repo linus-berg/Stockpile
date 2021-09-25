@@ -17,7 +17,7 @@ namespace Stockpile.Channels {
     }
 
     public override Task Get(string id) {
-      Update(id);
+      Update(id, "DOWNLOAD");
       ms_.Add(id);
       return Task.CompletedTask;
     }

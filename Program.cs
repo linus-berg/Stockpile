@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using CommandLine;
 using Stockpile.Channels;
 using Stockpile.Services;
-using ShellProgressBar;
 
 namespace Stockpile {
   class Program {
@@ -14,10 +13,6 @@ namespace Stockpile {
     const string DELTA_DIR_NAME = "{0}{1}";
     const string DATE_FMT = "yyyyMMddHHmmssff";
     static readonly DateTime RUNTIME = DateTime.UtcNow;
-  private static readonly ProgressBarOptions bar_opts_ = new ProgressBarOptions {
-    CollapseWhenFinished = true,
-    ProgressCharacter = '─'
-  };
 
     static int Main(string[] args) {
       Parser.Default.ParseArguments<CLI.Options>(args).WithParsed(Run);
@@ -34,7 +29,7 @@ namespace Stockpile {
     static void Run(CLI.Options opt) {
       var cfg = ReadConfigFile();
       cfg.staging = opt.staging || cfg.staging;
-
+      cfg.progress_bars = opt.progress_bars;
       /* Setup database storage location */
       DatabaseService.SetDatabaseDir(cfg.db_path);
 
