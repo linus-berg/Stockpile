@@ -10,6 +10,7 @@ namespace Stockpile.Services {
       id_ = id;
       SC_.AddStyle("npm", Color.Cyan);
       SC_.AddStyle("nuget", Color.Brown);
+      SC_.AddStyle("maven", Color.Gold);
       SC_.AddStyle("git", Color.Lime);
       SC_.AddStyle("INSPECT", Color.Coral);
       SC_.AddStyle("DOWNLOAD", Color.GreenYellow);
