@@ -1,5 +1,6 @@
 {
   "db_path": "./Storage/",
+  "sql_path": "./Sql/",
   "filters": {
     "npm-filter": {
       "@graphql-codegen": {
@@ -14,6 +15,20 @@
     }
   },
   "fetchers": [
+    {
+      "id": "maven",
+      "type": "maven",
+      "filters": [],
+      "threading": {
+        "parallel_pkg": 6,
+        "parallel_ver": 1
+      },
+      "input": "./MAVEN.txt",
+      "output": {
+        "full": "../PACKAGES/MAVEN/",
+        "delta": "../DELTA/MAVEN/"
+      }
+    },
     {
       "id": "npm",
       "type": "npm",

@@ -31,7 +31,7 @@ namespace Stockpile {
       cfg.staging = opt.staging || cfg.staging;
       cfg.progress_bars = opt.progress_bars;
       /* Setup database storage location */
-      DatabaseService.SetDatabaseDir(cfg.db_path);
+      DatabaseService.SetDatabaseDirs(cfg.db_path, cfg.sql_path);
 
       var fetchers = new List<BaseChannel>();
       var tasks = new List<Task>();
@@ -57,6 +57,7 @@ namespace Stockpile {
       return cfg.type switch {
         "npm" => new Npm(main_cfg, cfg),
         "nuget" => new Nuget(main_cfg, cfg),
+        "maven" => new Maven(main_cfg, cfg),
         "git" => new Git(main_cfg, cfg),
         _ => throw new ArgumentException("type")
       };

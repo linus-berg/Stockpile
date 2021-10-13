@@ -143,7 +143,7 @@ namespace Stockpile.Channels {
     }
 
     /* Download remote file. */
-    private async Task Download(DBPackage pkg, string path) {
+    protected virtual async Task Download(DBPackage pkg, string path) {
       string out_fp = fs_.GetMainFilePath(path);
       FileService.CreateDirectory(out_fp);
       bool on_disk = FileService.OnDisk(out_fp);

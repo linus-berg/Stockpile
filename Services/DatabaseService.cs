@@ -19,10 +19,12 @@ namespace Stockpile.Services {
 
   public class DatabaseService {
     private static string db_storage_;
+    private static string sql_path_;
     private readonly string db_path_;
     private readonly SqliteConnection db_;
 
-    public static void SetDatabaseDir(string db_storage) {
+    public static void SetDatabaseDirs(string db_storage, string sql_path) {
+      sql_path_ = sql_path;
       db_storage_ = db_storage;
       Directory.CreateDirectory(db_storage_);
     }
@@ -56,7 +58,7 @@ namespace Stockpile.Services {
     }
 
     private void Init() {
-      var init_sql_path = db_storage_ + "create_db.sql";
+      var init_sql_path = sql_path_ + "create_db.sql";
       if (!File.Exists(init_sql_path)) {
         throw new FileNotFoundException("create_db.sql");
       }
