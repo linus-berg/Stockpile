@@ -18,18 +18,18 @@ namespace Stockpile.Channels {
   class Package {
     public Dictionary<string, Manifest> versions { get; set; }
   }
-    
+
   public class Npm : BaseChannel {
     private const string API_ = "https://registry.npmjs.org/";
     private readonly RestClient client_ = new RestClient(API_);
     public Npm(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
     }
-    
+
 
     protected override string GetFilePath(DBPackage pkg) {
       return StripRegistry(pkg.url).Replace("/-/", "/");
     }
-    
+
     public override async Task Get(string id) {
       Depth++;
       var pkg = await GetPackage(id);

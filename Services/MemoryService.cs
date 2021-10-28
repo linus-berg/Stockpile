@@ -15,7 +15,7 @@ namespace Stockpile.Services {
       found_ = new();
       error_ = new();
     }
-    
+
     public bool Exists(string id) {
       return found_.Contains(id);
     }

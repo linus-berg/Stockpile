@@ -8,7 +8,7 @@ using Stockpile.Services;
 namespace Stockpile.Channels {
 
   class Git : BaseChannel {
-    
+
     public Git(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
     }
 
@@ -24,7 +24,7 @@ namespace Stockpile.Channels {
 
     public override void ProcessIds() {
       HashSet<string> ids = ms_.GetMemory();
-      foreach(string id in ids) {
+      foreach (string id in ids) {
         ProcessRepo(id);
       }
     }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Stockpile.Services {
   public class BarDisplayService : IDisplayService {
-    
+
     private static readonly ProgressBarOptions bar_opts_ = new ProgressBarOptions {
       CollapseWhenFinished = true,
       ProgressCharacter = '─'
@@ -23,7 +23,7 @@ namespace Stockpile.Services {
       main_bar_.WriteLine($"[{id_}][FINISHED]");
       ch_bar_.Dispose();
     }
-    
+
     private string GetPrefix(DisplayInfo info) {
       var prefix = "";
       prefix += $"{id_,-6}";
@@ -31,7 +31,7 @@ namespace Stockpile.Services {
       prefix += $"Depth[{info.Depth}/{info.Max_Depth}] {info.Message}";
       return prefix;
     }
-    
+
 
     private void Message(string msg) {
       ch_bar_.Message = msg;
@@ -60,7 +60,7 @@ namespace Stockpile.Services {
       }
       IProgressBar bar = pkg_bars_[id];
       bar.Tick($"[{id}][{v}][{c}/{m}]");
-      if(c == m) {
+      if (c == m) {
         pkg_bars_.Remove(id);
       }
       UpdateChannel();

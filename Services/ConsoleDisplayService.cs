@@ -20,7 +20,7 @@ namespace Stockpile.Services {
     ~ConsoleDisplayService() {
       Console.WriteLineStyled($"[{id_}][FINISHED]", SC_);
     }
-    
+
     private string GetPrefix(DisplayInfo info) {
       var prefix = "";
       prefix += $"[{id_}][{info.Operation}]";

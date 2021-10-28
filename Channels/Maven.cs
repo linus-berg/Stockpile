@@ -15,19 +15,19 @@ namespace Stockpile.Channels {
     }
     private readonly FileMap[] FILE_MAPS = {
       new FileMap {
-        postfix = "pom", 
+        postfix = "pom",
         ext =".pom"
       },
       new FileMap {
-        postfix = "jar", 
+        postfix = "jar",
         ext =".jar"
       },
       new FileMap {
-        postfix = "src", 
+        postfix = "src",
         ext ="-sources.jar"
       },
       new FileMap {
-        postfix = "doc", 
+        postfix = "doc",
         ext ="-javadoc.jar"
       },
     };
@@ -40,7 +40,7 @@ namespace Stockpile.Channels {
     protected override string GetFilePath(DBPackage pkg) {
       return pkg.url.Replace(MAVEN_ + "/", "");
     }
-    
+
     public override async Task Get(string id) {
       Update(id, "INSPECT");
       Depth++;
@@ -54,7 +54,7 @@ namespace Stockpile.Channels {
         return;
       }
 
-      foreach(string version in metadata.AllVersions) {
+      foreach (string version in metadata.AllVersions) {
         Project artifact = await GetArtifact(group_id, artifact_id, version);
         if (artifact == null) {
           continue;
@@ -84,9 +84,9 @@ namespace Stockpile.Channels {
       }
       Depth--;
     }
-    
+
     private async Task ProcessDependencies(List<Dependency> dependencies) {
-      foreach(Dependency dep in dependencies) {
+      foreach (Dependency dep in dependencies) {
         string db_id = $"{dep.GroupId}::{dep.ArtifactId}";
         if (dep.GroupId.Contains("$") || dep.GroupId.Contains("{")) {
           continue;
@@ -102,29 +102,27 @@ namespace Stockpile.Channels {
       Project result = null;
       var serializer = new XmlSerializer(typeof(Project));
       using (var sr = new StreamReader(stream))
-          result = (Project)serializer.Deserialize(new XmlTextReader(sr)
-          {
-              Namespaces = false,
-          });
+        result = (Project)serializer.Deserialize(new XmlTextReader(sr) {
+          Namespaces = false,
+        });
       return result;
     }
 
-    public static T Parse<T>(Stream stream)
-		{
-			T result = default(T);
-			var serializer = new XmlSerializer(typeof(T));
-			using (var sr = new StreamReader (stream))
-				result = (T)serializer.Deserialize (sr);
+    public static T Parse<T>(Stream stream) {
+      T result = default(T);
+      var serializer = new XmlSerializer(typeof(T));
+      using (var sr = new StreamReader(stream))
+        result = (T)serializer.Deserialize(sr);
 
-			return result;
-		}
+      return result;
+    }
 
     private async Task<Metadata> GetMetadata(string g, string id) {
       Metadata m = null;
       try {
         using Stream s = await repo_.OpenMavenMetadataFile(g, id);
         m = Parse<Metadata>(s);
-      } catch {}
+      } catch { }
       return m;
     }
 
@@ -133,7 +131,7 @@ namespace Stockpile.Channels {
       try {
         using Stream s = await repo_.OpenArtifactPomFile(g, id, v);
         p = ParsePOM(s);
-      } catch {}
+      } catch { }
       return p;
     }
   }

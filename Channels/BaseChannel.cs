@@ -44,13 +44,13 @@ namespace Stockpile.Channels {
       cfg_ = cfg;
       /* Services */
       db_ = DatabaseService.Open(cfg.id);
-      ds_ = main_cfg.progress_bars ? new BarDisplayService(cfg.id) : 
+      ds_ = main_cfg.progress_bars ? new BarDisplayService(cfg.id) :
                                      new ConsoleDisplayService(cfg.id);
       fs_ = new FileService(main_cfg, cfg);
       fi_ = new FilterService(main_cfg, cfg);
       ms_ = new MemoryService();
     }
-    
+
     public async Task Start() {
       foreach (var id in package_list_) {
         if (!string.IsNullOrEmpty(id)) {
@@ -59,7 +59,7 @@ namespace Stockpile.Channels {
       }
       ProcessIds();
     }
-    
+
     public async Task TryGet(string id) {
       try {
         await Get(id);
@@ -78,14 +78,14 @@ namespace Stockpile.Channels {
       }
       return false;
     }
-    
+
     protected void Update(string msg, string op) {
-      ds_.Update(new DisplayInfo () {
+      ds_.Update(new DisplayInfo() {
         Message = msg,
         Operation = op,
-        Packages = ms_.GetCount(), 
-        Versions = versions_, 
-        Depth = depth_, 
+        Packages = ms_.GetCount(),
+        Versions = versions_,
+        Depth = depth_,
         Max_Depth = max_depth_
       });
     }
@@ -93,7 +93,7 @@ namespace Stockpile.Channels {
     public virtual void ProcessIds() {
       /* Parallel, max 5 concurrent fetchers */
       List<string> ids = (List<string>)db_.GetAllPackages();
-      
+
       /* Set the counts based on what is in database. */
       int v_c = db_.GetVersionCount();
       int p_c = db_.GetPackageCount();
@@ -103,8 +103,8 @@ namespace Stockpile.Channels {
       ds_.SetChannelCount(v_c);
       /* Process all IDs in parallel based on configuration */
       Parallel.ForEach(ids, new ParallelOptions {
-          MaxDegreeOfParallelism = cfg_.threading.parallel_pkg
-        }, (id) => {
+        MaxDegreeOfParallelism = cfg_.threading.parallel_pkg
+      }, (id) => {
         TryProcessId(id).Wait();
       });
       Update("", "COMPLETED");
@@ -129,7 +129,7 @@ namespace Stockpile.Channels {
         await TryDownload(pkg, GetFilePath(pkg));
       }
     }
-    
+
     /* Try download a remote file */
     protected async Task TryDownload(DBPackage pkg, string path) {
       try {
@@ -146,15 +146,20 @@ namespace Stockpile.Channels {
     protected virtual async Task Download(DBPackage pkg, string path) {
       string out_fp = fs_.GetMainFilePath(path);
       FileService.CreateDirectory(out_fp);
-      bool on_disk = FileService.OnDisk(out_fp);
-      /* If not on disk and the download succeeded */
-      if (!on_disk) {
-        RemoteFile file = new RemoteFile(pkg.url, ds_);
-        if (await file.Get(out_fp)) {
-          fs_.CopyToDelta(path);
+      if (FileService.OnDisk(out_fp)) {
+        /* If file size == 0 is probably an error. */
+        if (FileService.GetSize(out_fp) == 0) {
+          File.Delete(out_fp);
         } else {
-          ds_.Error($"[ERROR][Download][{cfg_.id}][{pkg.url}]");
+          return;
         }
+      }
+      /* If not on disk and the download succeeded */
+      RemoteFile file = new RemoteFile(pkg.url, ds_);
+      if (await file.Get(out_fp)) {
+        fs_.CopyToDelta(path);
+      } else {
+        ds_.Error($"[ERROR][Download][{cfg_.id}][{pkg.url}]");
       }
     }
 

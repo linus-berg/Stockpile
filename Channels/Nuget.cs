@@ -25,7 +25,7 @@ namespace Stockpile.Channels {
     protected override string GetFilePath(DBPackage pkg) {
       return $"{pkg.id}/{pkg.id}.{pkg.version}.nupkg";
     }
-    
+
     public override async Task Get(string id) {
       Update(id, "INSPECT");
       Depth++;
