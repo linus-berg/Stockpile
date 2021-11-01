@@ -1,6 +1,5 @@
 {
   "db_path": "./Storage/",
-  "sql_path": "./Sql/",
   "delta_format": "yyyyMMdd",
   "filters": {
     "npm-filter": {
@@ -26,8 +25,8 @@
       },
       "input": "./Input/MAVEN.txt",
       "output": {
-        "full": "../PACKAGES/MAVEN/",
-        "delta": "../DELTA/MAVEN/"
+        "full": "./Output/maven/full/",
+        "delta": "./Output/maven/delta/"
       }
     },
     {
@@ -42,8 +41,8 @@
       },
       "input": "./Input/NPM.txt",
       "output": {
-        "full": "../PACKAGES/NPM/",
-        "delta": "../DELTA/NPM/"
+        "full": "./Output/npm/full/",
+        "delta": "./Output/npm/delta/"
       }
     },
     {
@@ -55,8 +54,8 @@
       },
       "input": "./Input/GIT.txt",
       "output": {
-        "full": "../PACKAGES/GIT/",
-        "delta": "../DELTA/GIT/"
+        "full": "./Output/git/full/",
+        "delta": "./Output/git/delta/"
       }
     },
     {
@@ -68,8 +67,8 @@
       },
       "input": "./Input/NUGET.txt",
       "output": {
-        "full": "../PACKAGES/NUGET/",
-        "delta": "../DELTA/NUGET/"
+        "full": "./Output/nuget/full/",
+        "delta": "./Output/nuget/delta/"
       }
     }
   ]

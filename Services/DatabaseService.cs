@@ -19,12 +19,10 @@ namespace Stockpile.Services {
 
   public class DatabaseService {
     private static string db_storage_;
-    private static string sql_path_;
     private readonly string db_path_;
     private readonly SqliteConnection db_;
 
-    public static void SetDatabaseDirs(string db_storage, string sql_path) {
-      sql_path_ = sql_path;
+    public static void SetDatabaseDirs(string db_storage) {
       db_storage_ = db_storage;
       Directory.CreateDirectory(db_storage_);
     }
@@ -56,13 +54,19 @@ namespace Stockpile.Services {
     ~DatabaseService() {
       db_.Close();
     }
-
+    
+    /* init database */
+    private const string SQL_INIT_DB = @"
+      CREATE TABLE 'packages' (
+        'id'	TEXT NOT NULL,
+        'version'	TEXT NOT NULL,
+        'url'	TEXT NOT NULL,
+        'processed'	INTEGER NOT NULL,
+        PRIMARY KEY('version', 'id')
+      )
+    ";
     private void Init() {
-      var init_sql_path = sql_path_ + "create_db.sql";
-      if (!File.Exists(init_sql_path)) {
-        throw new FileNotFoundException("create_db.sql");
-      }
-      db_.Query(File.ReadAllText(init_sql_path));
+      db_.Query(SQL_INIT_DB);
     }
 
     public void AddPackage(string id, string version, string url) {

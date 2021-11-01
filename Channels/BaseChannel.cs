@@ -11,6 +11,7 @@ namespace Stockpile.Channels {
     protected readonly Config.Main main_cfg_;
     protected readonly Config.Fetcher cfg_;
     private int depth_ = 0;
+    private int versions_ = 0;
     private int max_depth_ = 0;
 
     /* Stockpile services */
@@ -29,8 +30,6 @@ namespace Stockpile.Channels {
         depth_ = value;
       }
     }
-
-    private int versions_ = 0;
 
 
     /* List of found package ids */
@@ -125,7 +124,7 @@ namespace Stockpile.Channels {
       List<DBPackage> pkgs = (List<DBPackage>)db_.GetAllToDownload(id);
       for (int i = 0; i < pkgs.Count; i++) {
         DBPackage pkg = pkgs[i];
-        ds_.UpdatePackage(id, pkg.version, i, pkgs.Count);
+        ds_.UpdatePackage(id, pkg.version, i + 1, pkgs.Count);
         await TryDownload(pkg, GetFilePath(pkg));
       }
     }

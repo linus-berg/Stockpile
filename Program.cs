@@ -29,7 +29,7 @@ namespace Stockpile {
       cfg.staging = opt.staging || cfg.staging;
       cfg.progress_bars = opt.progress_bars;
       /* Setup database storage location */
-      DatabaseService.SetDatabaseDirs(cfg.db_path, cfg.sql_path);
+      DatabaseService.SetDatabaseDirs(cfg.db_path);
 
       var fetchers = new List<BaseChannel>();
       var tasks = new List<Task>();
