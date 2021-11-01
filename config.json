@@ -1,6 +1,7 @@
 {
   "db_path": "./Storage/",
   "sql_path": "./Sql/",
+  "delta_format": "yyyyMMdd",
   "filters": {
     "npm-filter": {
       "@graphql-codegen": {
@@ -23,7 +24,7 @@
         "parallel_pkg": 6,
         "parallel_ver": 1
       },
-      "input": "./MAVEN.txt",
+      "input": "./Input/MAVEN.txt",
       "output": {
         "full": "../PACKAGES/MAVEN/",
         "delta": "../DELTA/MAVEN/"
@@ -39,7 +40,7 @@
         "parallel_pkg": 6,
         "parallel_ver": 1
       },
-      "input": "./NPM.txt",
+      "input": "./Input/NPM.txt",
       "output": {
         "full": "../PACKAGES/NPM/",
         "delta": "../DELTA/NPM/"
@@ -52,7 +53,7 @@
         "parallel_pkg": 6,
         "parallel_ver": 1
       },
-      "input": "./GIT.txt",
+      "input": "./Input/GIT.txt",
       "output": {
         "full": "../PACKAGES/GIT/",
         "delta": "../DELTA/GIT/"
@@ -65,7 +66,7 @@
         "parallel_pkg": 6,
         "parallel_ver": 1
       },
-      "input": "./NUGET.txt",
+      "input": "./Input/NUGET.txt",
       "output": {
         "full": "../PACKAGES/NUGET/",
         "delta": "../DELTA/NUGET/"
