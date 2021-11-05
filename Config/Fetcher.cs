@@ -6,6 +6,7 @@
     public string[] filters { get; set; }
     public string input { get; set; }
     public Output output { get; set; }
+    public string options { get; set; }
   }
 
   public class Output {

@@ -35,6 +35,7 @@
       "filters": [
         "npm-filter"
       ],
+      "options": "get_peers;get_dev",
       "threading": {
         "parallel_pkg": 6,
         "parallel_ver": 1
