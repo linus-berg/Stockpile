@@ -27,7 +27,7 @@ namespace Stockpile.Channels {
     }
 
     public override async Task Get(string id) {
-      Update(id, "INSPECT");
+      Update(id, Operation.INSPECT);
       Depth++;
       /* Memorize to not check again */
       ms_.Add(id);

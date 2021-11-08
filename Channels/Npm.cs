@@ -34,7 +34,7 @@ namespace Stockpile.Channels {
       Metadata metadata = await GetMetadata(id);
       /* Memorize to never visit this node again */
       ms_.Add(id);
-      Update(id, "INSPECT");
+      Update(id, Operation.INSPECT);
       if (metadata == null || metadata.versions == null) {
         ms_.SetError(id);
       } else {
@@ -87,7 +87,7 @@ namespace Stockpile.Channels {
       try {
         return await client_.GetAsync<Metadata>(CreateRequest($"{id}/"));
       } catch (Exception ex) {
-        ds_.Error($"[ERROR][NPM]Metadata][{id}] - {ex}");
+        ds_.PostError($"Metadata error -> {id} - {ex}");
         return null;
       }
     }

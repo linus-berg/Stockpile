@@ -28,7 +28,7 @@ namespace Stockpile.Channels {
       try {
         await ProcessStream(s, (int)size, tmp_file);
       } catch (Exception e) {
-        ds_.Error(e.ToString());
+        ds_.PostError(e.ToString());
       } finally {
         s.Close();
       }
@@ -38,7 +38,7 @@ namespace Stockpile.Channels {
         File.Move(tmp_file, filepath);
       } else {
         File.Delete(tmp_file);
-        ds_.Error($"{URL_} failed to download");
+        ds_.PostError($"{URL_} failed to download");
       }
       return true;
     }

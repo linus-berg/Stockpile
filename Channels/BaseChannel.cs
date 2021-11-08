@@ -41,13 +41,20 @@ namespace Stockpile.Channels {
       package_list_ = File.ReadAllLines(cfg.input);
       main_cfg_ = main_cfg;
       cfg_ = cfg;
+
       /* Services */
       db_ = DatabaseService.Open(cfg.id);
-      ds_ = main_cfg.progress_bars ? new BarDisplayService(cfg.id) :
-                                     new ConsoleDisplayService(cfg.id);
+      ds_ = new ConsoleDisplayService(cfg.id);
       fs_ = new FileService(main_cfg, cfg);
       fi_ = new FilterService(main_cfg, cfg);
       ms_ = new MemoryService();
+      IssueWarning();
+    }
+
+    private void IssueWarning() {
+      if (cfg_.force) {
+        ds_.Post($"Force is enabled.", Operation.WARNING);
+      }
     }
 
     public async Task Start() {
@@ -63,23 +70,23 @@ namespace Stockpile.Channels {
       try {
         await Get(id);
       } catch (Exception e) {
-        ds_.Error($"Could not fetch {id}.");
-        ds_.Error(e.ToString());
+        ds_.PostError($"Could not fetch {id}.");
+        ds_.PostError(e.ToString());
       }
     }
 
     protected bool IsProcessed(string id, string version, string url) {
       DBPackage db_pkg = db_.GetPackage(id, version);
       if (db_pkg != null && db_pkg.IsProcessed()) {
-        return true;
+        return !cfg_.force;
       } else if (db_pkg == null) {
         db_.AddPackage(id, version, url);
       }
       return false;
     }
 
-    protected void Update(string msg, string op) {
-      ds_.Update(new DisplayInfo() {
+    protected void Update(string msg, Operation op) {
+      ds_.PostInfo(new DisplayInfo() {
         Message = msg,
         Operation = op,
         Packages = ms_.GetCount(),
@@ -98,15 +105,13 @@ namespace Stockpile.Channels {
       int p_c = db_.GetPackageCount();
       versions_ = v_c;
       ms_.SetCount(p_c);
-      ds_.AddToCount(v_c);
-      ds_.SetChannelCount(v_c);
       /* Process all IDs in parallel based on configuration */
       Parallel.ForEach(ids, new ParallelOptions {
         MaxDegreeOfParallelism = cfg_.threading.parallel_pkg
       }, (id) => {
         TryProcessId(id).Wait();
       });
-      Update("", "COMPLETED");
+      Update("", Operation.COMPLETED);
     }
 
     private async Task TryProcessId(string id) {
@@ -115,7 +120,7 @@ namespace Stockpile.Channels {
           await ProcessVersions(id);
         }
       } catch (Exception ex) {
-        ds_.Error($"Error [{id}] - {ex}");
+        ds_.PostError($"{id} - {ex}");
       }
     }
 
@@ -124,7 +129,7 @@ namespace Stockpile.Channels {
       List<DBPackage> pkgs = (List<DBPackage>)db_.GetAllToDownload(id);
       for (int i = 0; i < pkgs.Count; i++) {
         DBPackage pkg = pkgs[i];
-        ds_.UpdatePackage(id, pkg.version, i + 1, pkgs.Count);
+        ds_.PostDownload(id, pkg.version, i + 1, pkgs.Count);
         await TryDownload(pkg, GetFilePath(pkg));
       }
     }
@@ -137,7 +142,7 @@ namespace Stockpile.Channels {
         }
         await Download(pkg, path);
       } catch (Exception ex) {
-        ds_.Error($"[ERROR][TryDownload][{cfg_.id}][{pkg.id}] - {ex}");
+        ds_.PostError($"TryDownload failed {cfg_.id}->{pkg.id} - {ex}");
       }
     }
 
@@ -158,7 +163,7 @@ namespace Stockpile.Channels {
       if (await file.Get(out_fp)) {
         fs_.CopyToDelta(path);
       } else {
-        ds_.Error($"[ERROR][Download][{cfg_.id}][{pkg.url}]");
+        ds_.PostError($" Download failed {cfg_.id}->{pkg.url}");
       }
     }
 

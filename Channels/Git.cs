@@ -17,7 +17,7 @@ namespace Stockpile.Channels {
     }
 
     public override Task Get(string id) {
-      Update(id, "DOWNLOAD");
+      Update(id, Operation.DOWNLOAD);
       ms_.Add(id);
       return Task.CompletedTask;
     }
@@ -31,7 +31,6 @@ namespace Stockpile.Channels {
 
     private void ProcessRepo(string id) {
       var uri = new Uri(id);
-      ds_.UpdateChannel();
       var abs_path = Path.GetFullPath(cfg_.output.full);
       var path = Path.Join(abs_path + uri.Host.Replace("www", ""), uri.AbsolutePath);
 

@@ -2,6 +2,7 @@
   public class Fetcher {
     public string id { get; set; }
     public string type { get; set; }
+    public bool force { get; set; }
     public Threading threading { get; set; }
     public string[] filters { get; set; }
     public string input { get; set; }

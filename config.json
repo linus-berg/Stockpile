@@ -18,6 +18,7 @@
     {
       "id": "maven",
       "type": "maven",
+      "force": true,
       "filters": [],
       "threading": {
         "parallel_pkg": 6,
@@ -32,6 +33,7 @@
     {
       "id": "npm",
       "type": "npm",
+      "force": false,
       "filters": [
         "npm-filter"
       ],
@@ -49,6 +51,7 @@
     {
       "id": "git",
       "type": "git",
+      "force": false,
       "threading": {
         "parallel_pkg": 6,
         "parallel_ver": 1
@@ -62,6 +65,7 @@
     {
       "id": "nuget",
       "type": "nuget",
+      "force": false,
       "threading": {
         "parallel_pkg": 6,
         "parallel_ver": 1

@@ -27,7 +27,6 @@ namespace Stockpile {
     static void Run(CLI.Options opt) {
       var cfg = ReadConfigFile(opt.config);
       cfg.staging = opt.staging || cfg.staging;
-      cfg.progress_bars = opt.progress_bars;
       /* Setup database storage location */
       DatabaseService.SetDatabaseDirs(cfg.db_path);
 
