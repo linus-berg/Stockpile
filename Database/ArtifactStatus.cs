@@ -1,6 +1,7 @@
 namespace Stockpile.Database {
   public enum ArtifactStatus {
-    OK,
+    UNPROCESSED,
+    PROCESSED,
     ERROR
   }
 }

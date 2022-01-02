@@ -46,7 +46,7 @@ namespace Stockpile.Channels {
       IEnumerable<PackageDependencyGroup> deps) {
       foreach (PackageDependencyGroup x in deps)
       foreach (PackageDependency pkg in x.Packages)
-        await AddArtifactIdToStack(pkg.Id);
+        await TryInspectArtifact(pkg.Id);
     }
 
     private async Task<IEnumerable<IPackageSearchMetadata>> GetMetadata(

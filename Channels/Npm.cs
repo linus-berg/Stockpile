@@ -64,7 +64,7 @@ namespace Stockpile.Channels {
       GetDependencies(Dictionary<string, string> dependencies) {
       if (dependencies == null) return;
       foreach (KeyValuePair<string, string> p in dependencies)
-        await AddArtifactIdToStack(p.Key);
+        await TryInspectArtifact(p.Key);
     }
 
     private async Task<Metadata> GetMetadata(string id) {

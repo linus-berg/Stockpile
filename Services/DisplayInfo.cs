@@ -4,7 +4,7 @@ namespace Stockpile.Services {
     public Operation Operation { get; set; }
     public int Packages { get; set; }
     public int Versions { get; set; }
-    public int Depth { get; set; }
-    public int Max_Depth { get; set; }
+    public int MaxTreeDepth { get; set; }
+    public int CurrentTreeDepth { get; set; }
   }
 }

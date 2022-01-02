@@ -20,7 +20,7 @@ namespace Stockpile.Channels {
       return Task.CompletedTask;
     }
 
-    protected override Task ProcessAllArtifacts() {
+    protected override Task DownloadArtifactsToDisk() {
       HashSet<string> ids = GetAllArtifactsInMemory();
       foreach (string id in ids) ProcessRepo(id);
       return Task.CompletedTask;

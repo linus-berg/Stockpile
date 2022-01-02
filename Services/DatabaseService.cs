@@ -32,7 +32,7 @@ namespace Stockpile.Services {
       if (artifact != null) return artifact;
       artifact = new Artifact {
         Name = name,
-        Status = ArtifactStatus.OK,
+        Status = ArtifactStatus.UNPROCESSED,
         Versions = new List<ArtifactVersion>()
       };
       await ctx_.Artifacts.AddAsync(artifact);
@@ -55,6 +55,9 @@ namespace Stockpile.Services {
 
     public async Task<IEnumerable<Artifact>> GetArtifacts() {
       return await ctx_.Artifacts.Include(a => a.Versions).ToListAsync();
+    }
+    public async Task<IEnumerable<Artifact>> GetUnprocessedArtifacts() {
+      return await ctx_.Artifacts.Where(a => a.Status == ArtifactStatus.UNPROCESSED).Include(a => a.Versions).ToListAsync();
     }
 
     public async Task<Artifact> GetArtifactByName(string name) {

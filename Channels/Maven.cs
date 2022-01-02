@@ -87,7 +87,7 @@ namespace Stockpile.Channels {
       foreach (Dependency dep in dependencies) {
         string db_id = $"{dep.GroupId}::{dep.ArtifactId}";
         if (dep.GroupId.Contains("$") || dep.GroupId.Contains("{")) continue;
-        await AddArtifactIdToStack(db_id);
+        await TryInspectArtifact(db_id);
       }
     }
 

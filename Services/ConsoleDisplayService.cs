@@ -1,27 +1,16 @@
-using System.Drawing;
-using Colorful;
+using System;
 
 namespace Stockpile.Services {
   public class ConsoleDisplayService : IDisplayService {
     private readonly string id_;
 
-    private readonly StyleSheet SC_ = new(Color.Gray);
 
     public ConsoleDisplayService(string id) {
       id_ = id;
-      SC_.AddStyle("npm", Color.Cyan);
-      SC_.AddStyle("nuget", Color.Brown);
-      SC_.AddStyle("maven", Color.Gold);
-      SC_.AddStyle("git", Color.Lime);
-      SC_.AddStyle(Operation.INSPECT.ToString(), Color.Coral);
-      SC_.AddStyle(Operation.DOWNLOAD.ToString(), Color.GreenYellow);
-      SC_.AddStyle(Operation.COMPLETED.ToString(), Color.Green);
-      SC_.AddStyle(Operation.WARNING.ToString(), Color.Yellow);
-      SC_.AddStyle(Operation.ERROR.ToString(), Color.Red);
     }
 
     public void Post(string msg, Operation op) {
-      Console.WriteLineStyled($"{GetPrefix(op)}->{msg}", SC_);
+      Console.WriteLine($"{GetPrefix(op)}->{msg}");
     }
 
     public void PostError(string msg) {
@@ -33,8 +22,8 @@ namespace Stockpile.Services {
     }
 
     public void PostInfo(DisplayInfo info) {
-      string msg = $"[{info.Packages}][{info.Versions}]";
-      msg += $"[{info.Depth}/{info.Max_Depth}][{info.Message}]";
+     string msg = $"[{info.Packages}][{info.Versions}]";
+      msg += $"[{info.CurrentTreeDepth}/{info.MaxTreeDepth}][{info.Message}]";
       Post(msg, info.Operation);
     }
 
@@ -43,7 +32,7 @@ namespace Stockpile.Services {
     }
 
     ~ConsoleDisplayService() {
-      Console.WriteLineStyled($"[{id_}][FINISHED]", SC_);
+      Console.WriteLine($"[{id_}][FINISHED]");
     }
 
     private string GetPrefix(Operation op) {
