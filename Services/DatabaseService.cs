@@ -40,26 +40,9 @@ namespace Stockpile.Services {
       return artifact;
     }
 
-    public void SaveArtifact(Artifact artifact) { 
+    public async Task SaveArtifact(Artifact artifact) { 
       ctx_.Artifacts.Update(artifact);
-    }
-
-    public async Task AddArtifactVersion(string id, string version, string url) {
-      Artifact artifact = await GetArtifact(id);
-      artifact.Versions.Add(new ArtifactVersion {
-        Status = ArtifactVersionStatus.UNPROCESSED,
-        Url = url,
-        Version = version
-      });
       await ctx_.SaveChangesAsync();
-    }
-
-    public async Task SetProcessed(string artifact_id, string version) {
-      ArtifactVersion artifact_version = await GetArtifactVersion(artifact_id, version);
-      if (artifact_version != null) {
-        artifact_version.Status = ArtifactVersionStatus.PROCESSED;
-        await ctx_.SaveChangesAsync();
-      }
     }
 
     public async Task<int> GetArtifactCount() {
@@ -74,11 +57,18 @@ namespace Stockpile.Services {
       return await ctx_.Artifacts.Include(a => a.Versions).ToListAsync();
     }
 
-    public async Task<ArtifactVersion> GetArtifactVersion(string artifact_id,
+    private async Task<ArtifactVersion> GetArtifactVersion(string artifact_id,
       string version) {
       return await ctx_.ArtifactVersions.Where(av =>
           av.ArtifactId == artifact_id && av.Version == version)
         .FirstOrDefaultAsync();
+    }
+
+    public async Task BlacklistArtifact(string artifact_id, string version) {
+      ArtifactVersion a_v = await GetArtifactVersion(artifact_id, version);
+      a_v.SetStatus(ArtifactVersionStatus.BLACKLISTED);
+      ctx_.ArtifactVersions.Update(a_v);
+      await ctx_.SaveChangesAsync();
     }
     
     public async Task<Artifact> GetArtifact(string id) {

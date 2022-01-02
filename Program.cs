@@ -4,13 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Avalonia;
 using CommandLine;
 using Stockpile.Channels;
 using Stockpile.CLI;
 using Stockpile.Config;
 using Stockpile.Services;
-using Stockpile.UI;
 
 namespace Stockpile {
   internal class Program {
@@ -21,60 +19,39 @@ namespace Stockpile {
     private static int Main(string[] args) {
       arguments = args;
       Parser.Default
-        .ParseArguments<ManagerOptions, StockpileOptions>(args)
+        .ParseArguments<BlacklistOptions, StockpileOptions>(args)
         .MapResult(
-          (ManagerOptions options) => RunWithUI(options),
-          (StockpileOptions options) => Run(options),
+          (BlacklistOptions options) => RunBlacklist(options),
+          (StockpileOptions options) => RunStockpile(options),
           err => 1);
       return 0;
     }
-
-    private static Main ReadConfigFile(string config) {
+    
+    private static Main GetConfigFile(string config) {
       if (!File.Exists(config)) throw new FileNotFoundException(config);
       return JsonSerializer.Deserialize<Main>(File.ReadAllText(config));
     }
 
-    private static int Run(StockpileOptions options) {
-      Main cfg = ReadConfigFile(options.config);
-      cfg.staging = options.staging || cfg.staging;
-      /* Setup database storage location */
-      DatabaseService.SetDatabaseDirs(cfg.db_path);
-      List<BaseChannel> fetchers = new();
-      Task.WaitAll(cfg.fetchers
-        .Select(cfg_fetcher => CreateChannelTask(cfg, cfg_fetcher)).ToArray());
+    private static int RunStockpile(StockpileOptions options) {
+      Main config = GetConfigFile(options.config);
+      config.staging = options.staging || config.staging;
+      List<ArtifactService> fetchers = config.fetchers.Select(fetcher => new ArtifactService(config, fetcher)).ToList();
+      Task.WaitAll(fetchers.Select(a_s => a_s.Start()).ToArray());
       return 0;
     }
 
-    private static int RunWithUI(ManagerOptions options) {
-      AppBuilder.Configure<App>().UsePlatformDetect()
-        .StartWithClassicDesktopLifetime(arguments);
-      ManagerWindow mw = new();
-      mw.Show();
+    private static int RunBlacklist(BlacklistOptions options) {
+      Main config = GetConfigFile(options.config);
+      ArtifactService artifact_service = new ArtifactService(config, options.ChannelId);
+      BaseChannel base_channel = artifact_service.GetChannel();
+      base_channel.BlacklistArtifact(options.ArtifactId, options.Version)
+        .Wait();
       return 0;
     }
 
-    private static async Task CreateChannelTask(Main cfg, Fetcher cfg_fetcher) {
-      BaseChannel ch = GetChannel(cfg, cfg_fetcher);
-      try {
-        await ch.Start();
-      }
-      catch (Exception e) {
-        Console.WriteLine(e);
-      }
-    }
-
-    private static BaseChannel GetChannel(Main main_cfg, Fetcher cfg) {
-      Output output = cfg.output;
-      cfg.output.delta =
-        $"{cfg.output.delta}{RUNTIME.ToString(main_cfg.delta_format)}/";
-
-      return cfg.type switch {
-        "npm" => new Npm(main_cfg, cfg),
-        "nuget" => new Nuget(main_cfg, cfg),
-        "maven" => new Maven(main_cfg, cfg),
-        "git" => new Git(main_cfg, cfg),
-        _ => throw new ArgumentException("type")
-      };
+    private static ArtifactService GetArtifactService(Main config,
+      string channel_id) {
+      return new ArtifactService(config, channel_id);
     }
   }
 }

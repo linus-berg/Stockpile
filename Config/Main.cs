@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace Stockpile.Config {
   public class Main {
@@ -7,5 +8,9 @@ namespace Stockpile.Config {
     public bool staging { get; set; }
     public Dictionary<string, Dictionary<string, Filter>> filters { get; set; }
     public Fetcher[] fetchers { get; set; }
+
+    public Fetcher GetChannelConfig(string channel_id) {
+      return fetchers.FirstOrDefault(ch => ch.id == channel_id);
+    }
   }
 }

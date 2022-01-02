@@ -5,9 +5,6 @@
         <DefaultItemExcludes>PACKAGES\**;DELTA\**;$(DefaultItemExcludes)</DefaultItemExcludes>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="0.10.11" />
-        <PackageReference Include="Avalonia.Desktop" Version="0.10.11" />
-        <PackageReference Include="Avalonia.Diagnostics" Version="0.10.11" />
         <PackageReference Include="Colorful.Console" Version="1.2.15" />
         <PackageReference Include="CommandLineParser" Version="2.8.0" />
         <PackageReference Include="Dapper" Version="2.0.90" />

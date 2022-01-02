@@ -35,7 +35,7 @@ namespace Stockpile.Channels {
       ms_.Add(id);
       IEnumerable<IPackageSearchMetadata> versions = await GetMetadata(id);
 
-      Artifact artifact = await db_.GetArtifact(id);
+      Artifact artifact = await db_.AddArtifact(id);
       
       foreach (IPackageSearchMetadata version in versions) {
         string v = version.Identity.Version.ToString();
@@ -47,7 +47,7 @@ namespace Stockpile.Channels {
         /* Set dependency has been processed */
         artifact.SetVersionAsProcessed(v, u);
       }
-      db_.SaveArtifact(artifact);
+      await db_.SaveArtifact(artifact);
       Depth--;
     }
 

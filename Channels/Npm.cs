@@ -65,7 +65,7 @@ namespace Stockpile.Channels {
         /* Upon walking back up the tree, set that this packages dependencies has been found. */
         artifact.SetVersionAsProcessed(version, url);
       }
-      db_.SaveArtifact(artifact);
+      await db_.SaveArtifact(artifact);
     }
 
     private async Task

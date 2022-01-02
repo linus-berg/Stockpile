@@ -26,7 +26,7 @@ namespace Stockpile.Channels {
 
 
     /* List of found package ids */
-    protected ILogger logger_ = NullLogger.Instance;
+    protected readonly ILogger logger_ = NullLogger.Instance;
     private int max_depth_;
     private int versions_;
 
@@ -73,6 +73,10 @@ namespace Stockpile.Channels {
         ds_.PostError($"Could not fetch {id}.");
         ds_.PostError(e.ToString());
       }
+    }
+
+    public async Task BlacklistArtifact(string artifact_id, string version) {
+      await db_.BlacklistArtifact(artifact_id, version);
     }
 
     protected void Update(string msg, Operation op) {

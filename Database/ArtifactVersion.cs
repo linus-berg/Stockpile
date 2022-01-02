@@ -12,7 +12,7 @@ namespace Stockpile.Database {
     }
     
     public bool IsProcessed() {
-      return this.Status == ArtifactVersionStatus.PROCESSED;
+      return Status is ArtifactVersionStatus.PROCESSED or ArtifactVersionStatus.BLACKLISTED;
     }
   }
 }
