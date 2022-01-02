@@ -34,7 +34,8 @@ namespace Stockpile.Channels {
 
     private readonly MavenCentralRepository repo_;
 
-    public Maven(MainConfig main_config, ChannelConfig cfg) : base(main_config, cfg) {
+    public Maven(MainConfig main_config, ChannelConfig cfg) : base(main_config,
+      cfg) {
       repo_ = MavenRepository.FromMavenCentral();
     }
 

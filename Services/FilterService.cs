@@ -21,7 +21,8 @@ namespace Stockpile.Services {
     private void LoadFilters() {
       if (cfg_.filters == null) return;
       foreach (string group_id in cfg_.filters) {
-        Dictionary<string, Filter> filter_group = main_config_.filters[group_id];
+        Dictionary<string, Filter>
+          filter_group = main_config_.filters[group_id];
         /* Add all active filter groups. */
         foreach (KeyValuePair<string, Filter> filter in filter_group)
           filters_[filter.Key] = filter.Value;

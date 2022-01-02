@@ -22,7 +22,7 @@ namespace Stockpile.Services {
     }
 
     public void PostInfo(DisplayInfo info) {
-     string msg = $"[{info.Packages}][{info.Versions}]";
+      string msg = $"[{info.Packages}][{info.Versions}]";
       msg += $"[{info.CurrentTreeDepth}/{info.MaxTreeDepth}][{info.Message}]";
       Post(msg, info.Operation);
     }

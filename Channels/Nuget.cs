@@ -16,7 +16,8 @@ namespace Stockpile.Channels {
     private readonly SourceRepository repository_;
     private FindPackageByIdResource resource_;
 
-    public Nuget(MainConfig main_config, ChannelConfig cfg) : base(main_config, cfg) {
+    public Nuget(MainConfig main_config, ChannelConfig cfg) : base(main_config,
+      cfg) {
       repository_ = Repository.Factory.GetCoreV3(API_);
       meta_res_ = repository_.GetResource<PackageMetadataResource>();
       resource_ = repository_.GetResource<FindPackageByIdResource>();

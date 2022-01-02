@@ -8,7 +8,8 @@ using Stockpile.Database;
 
 namespace Stockpile.Channels {
   internal class Git : BaseChannel {
-    public Git(MainConfig main_config, ChannelConfig cfg) : base(main_config, cfg) {
+    public Git(MainConfig main_config, ChannelConfig cfg) : base(main_config,
+      cfg) {
     }
 
     protected override string GetFilePath(Artifact artifact,

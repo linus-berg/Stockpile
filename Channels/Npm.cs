@@ -15,7 +15,8 @@ namespace Stockpile.Channels {
     private readonly bool get_dev_deps_;
     private readonly bool get_peer_deps_;
 
-    public Npm(MainConfig main_config, ChannelConfig cfg) : base(main_config, cfg) {
+    public Npm(MainConfig main_config, ChannelConfig cfg) : base(main_config,
+      cfg) {
       if (cfg.options == null)
         throw new NoNullAllowedException("Config options was null.");
       ;

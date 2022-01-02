@@ -7,9 +7,9 @@ using Stockpile.Config;
 namespace Stockpile.Services {
   public class ArtifactService {
     private static readonly DateTime RUNTIME = DateTime.UtcNow;
-    private BaseChannel channel_;
     private readonly MainConfig config_;
     private readonly ChannelConfig fetcher_config_;
+    private BaseChannel channel_;
     private CommonOptions options_;
 
     public ArtifactService(MainConfig config, string channel_id) {
