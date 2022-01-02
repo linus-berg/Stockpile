@@ -1,26 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dapper;
-using Dapper.Contrib.Extensions;
-using Microsoft.Data.Sqlite;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Stockpile.Database;
 
 namespace Stockpile.Services {
-  [Table("packages")]
-  public class DBPackage {
-    [ExplicitKey]
-    public string id { get; set; }
-    public string version { get; set; }
-    public string url { get; set; }
-    public int processed { get; set; }
-    public bool IsProcessed() => processed > 0;
-  }
-
-
   public class DatabaseService {
     private static string db_storage_;
-    private readonly string db_path_;
-    private readonly SqliteConnection db_;
+    private readonly StockpileContext ctx_;
+
+    private DatabaseService(string path) {
+      ctx_ = new StockpileContext(path);
+      ctx_.Database.EnsureCreated();
+    }
+
 
     public static void SetDatabaseDirs(string db_storage) {
       db_storage_ = db_storage;
@@ -28,88 +22,68 @@ namespace Stockpile.Services {
     }
 
     public static DatabaseService Open(string type) {
-      var db_str = db_storage_ + type + ".sqlite";
-      var exists = File.Exists(db_str);
-      var db = new DatabaseService(db_str);
-      if (!exists) {
-        db.Init();
-      }
+      string db_str = db_storage_ + type + ".sqlite";
+      DatabaseService db = new(db_str);
       return db;
     }
 
-    private DatabaseService(string path) {
-      db_path_ = path;
-      db_ = new SqliteConnection($"Data Source={path}");
-      db_.Open();
-      using (var command = db_.CreateCommand()) {
-        command.CommandText = @"
-          PRAGMA journal_mode = WAL;
-          PRAGMA synchronous = normal;
-          PRAGMA temp_store = memory;
-        ";
-        command.ExecuteNonQuery();
+    public async Task<Artifact> AddArtifact(string id) {
+      Artifact artifact = await GetArtifact(id);
+      if (artifact != null) return artifact;
+      artifact  = new() {
+        Id = id,
+        Status = ArtifactStatus.OK,
+        Versions = new List<ArtifactVersion>()
+      };
+      await ctx_.Artifacts.AddAsync(artifact);
+      await ctx_.SaveChangesAsync();
+      return artifact;
+    }
+
+    public void SaveArtifact(Artifact artifact) { 
+      ctx_.Artifacts.Update(artifact);
+    }
+
+    public async Task AddArtifactVersion(string id, string version, string url) {
+      Artifact artifact = await GetArtifact(id);
+      artifact.Versions.Add(new ArtifactVersion {
+        Status = ArtifactVersionStatus.UNPROCESSED,
+        Url = url,
+        Version = version
+      });
+      await ctx_.SaveChangesAsync();
+    }
+
+    public async Task SetProcessed(string artifact_id, string version) {
+      ArtifactVersion artifact_version = await GetArtifactVersion(artifact_id, version);
+      if (artifact_version != null) {
+        artifact_version.Status = ArtifactVersionStatus.PROCESSED;
+        await ctx_.SaveChangesAsync();
       }
     }
 
-    ~DatabaseService() {
-      db_.Close();
+    public async Task<int> GetArtifactCount() {
+      return await ctx_.Artifacts.CountAsync();
+    }
+
+    public async Task<int> GetArtifactVersionCount() {
+      return await ctx_.ArtifactVersions.CountAsync();
+    }
+
+    public async Task<IEnumerable<Artifact>> GetArtifacts() {
+      return await ctx_.Artifacts.Include(a => a.Versions).ToListAsync();
+    }
+
+    public async Task<ArtifactVersion> GetArtifactVersion(string artifact_id,
+      string version) {
+      return await ctx_.ArtifactVersions.Where(av =>
+          av.ArtifactId == artifact_id && av.Version == version)
+        .FirstOrDefaultAsync();
     }
     
-    /* init database */
-    private const string SQL_INIT_DB = @"
-      CREATE TABLE 'packages' (
-        'id'	TEXT NOT NULL,
-        'version'	TEXT NOT NULL,
-        'url'	TEXT NOT NULL,
-        'processed'	INTEGER NOT NULL,
-        PRIMARY KEY('version', 'id')
-      )
-    ";
-    private void Init() {
-      db_.Query(SQL_INIT_DB);
+    public async Task<Artifact> GetArtifact(string id) {
+      return await ctx_.Artifacts.Where(a => a.Id == id)
+        .Include(a => a.Versions).FirstOrDefaultAsync();
     }
-
-    public void AddPackage(string id, string version, string url) {
-      var pkg = new DBPackage {
-        id = id,
-        version = version,
-        url = url,
-        processed = 0
-      };
-      db_.Insert(pkg);
-    }
-
-    public void SetProcessed(string id, string version) {
-      db_.Query<DBPackage>("UPDATE packages SET processed=1 WHERE id=@id AND version=@version",
-          new {
-            id,
-            version
-          });
-    }
-    public IEnumerable<string> GetAllPackages() {
-      var packages = db_.Query<string>("SELECT id FROM packages WHERE processed=1 GROUP BY id");
-      return packages;
-
-    }
-    public int GetPackageCount() {
-      return db_.Query<int>("SELECT COUNT(DISTINCT id) FROM packages").FirstOrDefault();
-    }
-
-    public int GetVersionCount() {
-      return db_.Query<int>("SELECT COUNT(*) FROM packages").FirstOrDefault();
-    }
-
-    public IEnumerable<DBPackage> GetAllToDownload(string id) {
-      lock (db_) {
-        var packages = db_.Query<DBPackage>("SELECT * FROM packages WHERE id=@id AND processed=1", new { id });
-        return packages;
-      }
-    }
-
-    public DBPackage GetPackage(string id, string version) {
-      var package = db_.Query<DBPackage>("SELECT * FROM packages WHERE id=@id AND version=@version", new { id, version });
-      return package.FirstOrDefault();
-    }
-
   }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+
 namespace Stockpile.PackageModels.Npm {
   public class Package {
     public Dictionary<string, string> dependencies { get; set; }

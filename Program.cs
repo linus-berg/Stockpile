@@ -1,55 +1,72 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Avalonia;
 using CommandLine;
 using Stockpile.Channels;
+using Stockpile.CLI;
+using Stockpile.Config;
 using Stockpile.Services;
+using Stockpile.UI;
 
 namespace Stockpile {
-  class Program {
-    const string DELTA_DIR_NAME = "{0}{1}";
-    static readonly DateTime RUNTIME = DateTime.UtcNow;
+  internal class Program {
+    private const string DELTA_DIR_NAME = "{0}{1}";
+    private static readonly DateTime RUNTIME = DateTime.UtcNow;
+    private static string[] arguments;
 
-    static int Main(string[] args) {
-      Parser.Default.ParseArguments<CLI.Options>(args).WithParsed(Run);
+    private static int Main(string[] args) {
+      arguments = args;
+      Parser.Default
+        .ParseArguments<ManagerOptions, StockpileOptions>(args)
+        .MapResult(
+          (ManagerOptions options) => RunWithUI(options),
+          (StockpileOptions options) => Run(options),
+          err => 1);
       return 0;
     }
 
-    static Config.Main ReadConfigFile(string config) {
-      if (!File.Exists(config)) {
-        throw new FileNotFoundException(config);
-      }
-      return JsonSerializer.Deserialize<Config.Main>(File.ReadAllText(config));
+    private static Main ReadConfigFile(string config) {
+      if (!File.Exists(config)) throw new FileNotFoundException(config);
+      return JsonSerializer.Deserialize<Main>(File.ReadAllText(config));
     }
 
-    static void Run(CLI.Options opt) {
-      var cfg = ReadConfigFile(opt.config);
-      cfg.staging = opt.staging || cfg.staging;
+    private static int Run(StockpileOptions options) {
+      Main cfg = ReadConfigFile(options.config);
+      cfg.staging = options.staging || cfg.staging;
       /* Setup database storage location */
       DatabaseService.SetDatabaseDirs(cfg.db_path);
-
-      var fetchers = new List<BaseChannel>();
-      var tasks = new List<Task>();
-      foreach (var cfg_fetcher in cfg.fetchers) {
-        tasks.Add(CreateChannelTask(cfg, cfg_fetcher));
-      }
-      Task.WaitAll(tasks.ToArray());
+      List<BaseChannel> fetchers = new();
+      Task.WaitAll(cfg.fetchers
+        .Select(cfg_fetcher => CreateChannelTask(cfg, cfg_fetcher)).ToArray());
+      return 0;
     }
 
-    static async Task CreateChannelTask(Config.Main cfg, Config.Fetcher cfg_fetcher) {
+    private static int RunWithUI(ManagerOptions options) {
+      AppBuilder.Configure<App>().UsePlatformDetect()
+        .StartWithClassicDesktopLifetime(arguments);
+      ManagerWindow mw = new();
+      mw.Show();
+      return 0;
+    }
+
+    private static async Task CreateChannelTask(Main cfg, Fetcher cfg_fetcher) {
       BaseChannel ch = GetChannel(cfg, cfg_fetcher);
       try {
         await ch.Start();
-      } catch (Exception e) {
+      }
+      catch (Exception e) {
         Console.WriteLine(e);
       }
     }
 
-    static BaseChannel GetChannel(Config.Main main_cfg, Config.Fetcher cfg) {
-      Config.Output output = cfg.output;
-      cfg.output.delta = cfg.output.delta + RUNTIME.ToString(main_cfg.delta_format) + '/';
+    private static BaseChannel GetChannel(Main main_cfg, Fetcher cfg) {
+      Output output = cfg.output;
+      cfg.output.delta =
+        $"{cfg.output.delta}{RUNTIME.ToString(main_cfg.delta_format)}/";
 
       return cfg.type switch {
         "npm" => new Npm(main_cfg, cfg),

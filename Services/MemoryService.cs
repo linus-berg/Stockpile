@@ -1,19 +1,20 @@
 using System.Collections.Generic;
+using Stockpile.Config;
 
 namespace Stockpile.Services {
   public class MemoryService {
-    protected readonly Config.Main main_cfg_;
-    protected readonly Config.Fetcher cfg_;
-    private int packages_ = 0;
+    protected readonly Fetcher cfg_;
+    protected readonly DatabaseService db_;
+    private readonly HashSet<string> error_;
 
     /* List of found package ids */
-    private HashSet<string> found_;
-    private HashSet<string> error_;
-    protected readonly DatabaseService db_;
+    private readonly HashSet<string> found_;
+    protected readonly Main main_cfg_;
+    private int packages_;
 
     public MemoryService() {
-      found_ = new();
-      error_ = new();
+      found_ = new HashSet<string>();
+      error_ = new HashSet<string>();
     }
 
     public bool Exists(string id) {
@@ -24,6 +25,7 @@ namespace Stockpile.Services {
       packages_++;
       found_.Add(id);
     }
+
     public int GetCount() {
       return packages_;
     }

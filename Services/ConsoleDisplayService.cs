@@ -1,12 +1,11 @@
 using System.Drawing;
-using Console = Colorful.Console;
 using Colorful;
 
 namespace Stockpile.Services {
   public class ConsoleDisplayService : IDisplayService {
     private readonly string id_;
-    
-    private readonly StyleSheet SC_ = new StyleSheet(Color.Gray);
+
+    private readonly StyleSheet SC_ = new(Color.Gray);
 
     public ConsoleDisplayService(string id) {
       id_ = id;
@@ -21,14 +20,6 @@ namespace Stockpile.Services {
       SC_.AddStyle(Operation.ERROR.ToString(), Color.Red);
     }
 
-    ~ConsoleDisplayService() {
-      Console.WriteLineStyled($"[{id_}][FINISHED]", SC_);
-    }
-
-    private string GetPrefix(Operation op) {
-      return $"[{id_}][{op.ToString()}]";
-    }
-
     public void Post(string msg, Operation op) {
       Console.WriteLineStyled($"{GetPrefix(op)}->{msg}", SC_);
     }
@@ -36,6 +27,7 @@ namespace Stockpile.Services {
     public void PostError(string msg) {
       Post(msg, Operation.ERROR);
     }
+
     public void PostWarning(string msg) {
       Post(msg, Operation.WARNING);
     }
@@ -48,6 +40,14 @@ namespace Stockpile.Services {
 
     public void PostDownload(string id, string v, int c, int m) {
       Post($"[{id}][{v}][{c}/{m}]", Operation.DOWNLOAD);
+    }
+
+    ~ConsoleDisplayService() {
+      Console.WriteLineStyled($"[{id_}][FINISHED]", SC_);
+    }
+
+    private string GetPrefix(Operation op) {
+      return $"[{id_}][{op.ToString()}]";
     }
   }
 }

@@ -1,47 +1,49 @@
-﻿using System.Threading.Tasks;
-using System.Collections.Generic;
-using Stockpile.Services;
+﻿using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using MavenNet;
 using MavenNet.Models;
+using Stockpile.Config;
+using Stockpile.Database;
+using Stockpile.Services;
+using Artifact = Stockpile.Database.Artifact;
+
 namespace Stockpile.Channels {
-  class Maven : BaseChannel {
+  internal class Maven : BaseChannel {
     private const string MAVEN_ = "https://repo1.maven.org/maven2";
-    private record FileMap {
-      public string postfix;
-      public string ext;
-    }
+
     private readonly FileMap[] FILE_MAPS = {
-      new FileMap {
+      new() {
         postfix = "pom",
-        ext =".pom"
+        ext = ".pom"
       },
-      new FileMap {
+      new() {
         postfix = "jar",
-        ext =".jar"
+        ext = ".jar"
       },
-      new FileMap {
+      new() {
         postfix = "src",
-        ext ="-sources.jar"
+        ext = "-sources.jar"
       },
-      new FileMap {
+      new() {
         postfix = "doc",
-        ext ="-javadoc.jar"
-      },
+        ext = "-javadoc.jar"
+      }
     };
 
-    private MavenCentralRepository repo_;
-    public Maven(Config.Main main_cfg, Config.Fetcher cfg) : base(main_cfg, cfg) {
+    private readonly MavenCentralRepository repo_;
+
+    public Maven(Main main_cfg, Fetcher cfg) : base(main_cfg, cfg) {
       repo_ = MavenRepository.FromMavenCentral();
     }
 
-    protected override string GetFilePath(DBPackage pkg) {
-      return pkg.url.Replace(MAVEN_ + "/", "");
+    protected override string GetFilePath(ArtifactVersion version) {
+      return version.Url.Replace(MAVEN_ + "/", "");
     }
 
-    public override async Task Get(string id) {
+    protected override async Task Get(string id) {
       Update(id, Operation.INSPECT);
       Depth++;
       /* Memorize to not check again */
@@ -50,69 +52,69 @@ namespace Stockpile.Channels {
       string group_id = parts[0];
       string artifact_id = parts[1];
       Metadata metadata = await GetMetadata(group_id, artifact_id);
-      if (metadata == null) {
-        return;
-      }
+      if (metadata == null) return;
+
 
       foreach (string version in metadata.AllVersions) {
         Project artifact = await GetArtifact(group_id, artifact_id, version);
-        if (artifact == null) {
-          continue;
-        }
-        string base_url = $"{MAVEN_}/{group_id.Replace(".", "/")}/{artifact_id}/{version}";
+        if (artifact == null) continue;
+        string base_url =
+          $"{MAVEN_}/{group_id.Replace(".", "/")}/{artifact_id}/{version}";
 
         /* all the different names for fucking maven shit. */
         bool processed = false;
         foreach (FileMap fm in FILE_MAPS) {
           string fm_id = $"{id}::{fm.postfix}";
-          string url = $"{base_url}/{artifact_id}-{version}{fm.ext}";
-          if (IsProcessed(fm_id, version, url)) {
-            processed = true;
-            break;
+          Artifact db_artifact = await db_.AddArtifact(fm_id);
+          if (db_artifact.IsVersionProcessed(version)) {
+            continue;
           }
+          processed = true;
+          break;
         }
 
-        if (processed) {
-          continue;
-        }
+        if (processed) continue;
         await ProcessDependencies(artifact.Dependencies);
         /* Set all filetypes as processed */
         foreach (FileMap fm in FILE_MAPS) {
           string fm_id = $"{id}::{fm.postfix}";
-          db_.SetProcessed(fm_id, version);
+          Artifact db_artifact = await db_.GetArtifact(fm_id);
+          string url = $"{base_url}/{artifact_id}-{version}{fm.ext}";
+          db_artifact.SetVersionAsProcessed(fm_id, url);
         }
       }
+      
+
       Depth--;
     }
 
     private async Task ProcessDependencies(List<Dependency> dependencies) {
       foreach (Dependency dep in dependencies) {
         string db_id = $"{dep.GroupId}::{dep.ArtifactId}";
-        if (dep.GroupId.Contains("$") || dep.GroupId.Contains("{")) {
-          continue;
-        }
-        if (!ms_.Exists(db_id)) {
-          await Get(db_id);
-        }
+        if (dep.GroupId.Contains("$") || dep.GroupId.Contains("{")) continue;
+        if (!ms_.Exists(db_id)) await Get(db_id);
       }
     }
 
 
     public static Project ParsePOM(Stream stream) {
       Project result = null;
-      var serializer = new XmlSerializer(typeof(Project));
-      using (var sr = new StreamReader(stream))
-        result = (Project)serializer.Deserialize(new XmlTextReader(sr) {
-          Namespaces = false,
+      XmlSerializer serializer = new(typeof(Project));
+      using (StreamReader sr = new(stream)) {
+        result = (Project) serializer.Deserialize(new XmlTextReader(sr) {
+          Namespaces = false
         });
+      }
+
       return result;
     }
 
     public static T Parse<T>(Stream stream) {
-      T result = default(T);
-      var serializer = new XmlSerializer(typeof(T));
-      using (var sr = new StreamReader(stream))
-        result = (T)serializer.Deserialize(sr);
+      T result = default;
+      XmlSerializer serializer = new(typeof(T));
+      using (StreamReader sr = new(stream)) {
+        result = (T) serializer.Deserialize(sr);
+      }
 
       return result;
     }
@@ -122,7 +124,10 @@ namespace Stockpile.Channels {
       try {
         using Stream s = await repo_.OpenMavenMetadataFile(g, id);
         m = Parse<Metadata>(s);
-      } catch { }
+      }
+      catch {
+      }
+
       return m;
     }
 
@@ -131,8 +136,16 @@ namespace Stockpile.Channels {
       try {
         using Stream s = await repo_.OpenArtifactPomFile(g, id, v);
         p = ParsePOM(s);
-      } catch { }
+      }
+      catch {
+      }
+
       return p;
+    }
+
+    private record FileMap {
+      public string ext;
+      public string postfix;
     }
   }
 }

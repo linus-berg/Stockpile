@@ -5,7 +5,8 @@ namespace Stockpile.Services {
     COMPLETED = 2,
     WARNING = 100,
     ERROR = 101
-  };
+  }
+
   public interface IDisplayService {
     public void Post(string msg, Operation op);
     public void PostError(string msg);

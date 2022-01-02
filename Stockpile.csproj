@@ -1,34 +1,59 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
-    <DefaultItemExcludes>PACKAGES\**;DELTA\**;$(DefaultItemExcludes)</DefaultItemExcludes>
-    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Colorful.Console" Version="1.2.15" />
-    <PackageReference Include="CommandLineParser" Version="2.8.0" />
-    <PackageReference Include="Dapper" Version="2.0.90" />
-    <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
-    <PackageReference Include="LibGit2Sharp" Version="0.26.2" />
-    <PackageReference Include="MavenNet" Version="2.2.13" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.7" />
-    <PackageReference Include="Nuget.Packaging" Version="5.9.1" />
-    <PackageReference Include="NuGet.Protocol" Version="5.9.1" />
-    <PackageReference Include="NuGet.Versioning" Version="5.9.1" />
-    <PackageReference Include="RestSharp" Version="106.12.0" />
-    <PackageReference Include="System.Collections" Version="4.3.0" />
-    <PackageReference Include="System.Diagnostics.Debug" Version="4.3.0" />
-    <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
-    <PackageReference Include="System.Runtime.Extensions" Version="4.3.0" />
-    <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Sql\*.sql">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="config.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+        <DefaultItemExcludes>PACKAGES\**;DELTA\**;$(DefaultItemExcludes)</DefaultItemExcludes>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="0.10.11" />
+        <PackageReference Include="Avalonia.Desktop" Version="0.10.11" />
+        <PackageReference Include="Avalonia.Diagnostics" Version="0.10.11" />
+        <PackageReference Include="Colorful.Console" Version="1.2.15" />
+        <PackageReference Include="CommandLineParser" Version="2.8.0" />
+        <PackageReference Include="Dapper" Version="2.0.90" />
+        <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
+        <PackageReference Include="LibGit2Sharp" Version="0.26.2" />
+        <PackageReference Include="MavenNet" Version="2.2.13" />
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.7" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.13">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.13" />
+        <PackageReference Include="Nuget.Packaging" Version="5.9.1" />
+        <PackageReference Include="NuGet.Protocol" Version="5.9.1" />
+        <PackageReference Include="NuGet.Versioning" Version="5.9.1" />
+        <PackageReference Include="RestSharp" Version="106.12.0" />
+        <PackageReference Include="System.Collections" Version="4.3.0" />
+        <PackageReference Include="System.Diagnostics.Debug" Version="4.3.0" />
+        <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
+        <PackageReference Include="System.Runtime.Extensions" Version="4.3.0" />
+        <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="Sql\*.sql">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="config.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+    <ItemGroup>
+        <None Update="Input\GIT.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Input\MAVEN.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Input\NPM.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Input\NUGET.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+    <ItemGroup>
+        <Folder Include="Output" />
+        <Folder Include="Storage" />
+    </ItemGroup>
 </Project>

@@ -1,11 +1,12 @@
 using System.IO;
+using Stockpile.Config;
 
 namespace Stockpile.Services {
   public class FileService {
-    private readonly Config.Main main_cfg_;
-    private readonly Config.Fetcher ch_cfg_;
+    private readonly Fetcher ch_cfg_;
+    private readonly Main main_cfg_;
 
-    public FileService(Config.Main main_cfg, Config.Fetcher ch_cfg) {
+    public FileService(Main main_cfg, Fetcher ch_cfg) {
       main_cfg_ = main_cfg;
       ch_cfg_ = ch_cfg;
     }
@@ -35,12 +36,12 @@ namespace Stockpile.Services {
     }
 
     public void CopyToDelta(string fp) {
-      if (!main_cfg_.staging) {
-        string out_fp = GetMainFilePath(fp);
-        string delta_fp = GetDeltaFilePath(fp);
-        CreateDirectory(delta_fp);
-        File.Copy(out_fp, delta_fp);
-      }
+      if (main_cfg_.staging) return;
+
+      string out_fp = GetMainFilePath(fp);
+      string delta_fp = GetDeltaFilePath(fp);
+      CreateDirectory(delta_fp);
+      File.Copy(out_fp, delta_fp);
     }
   }
 }

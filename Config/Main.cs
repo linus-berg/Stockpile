@@ -9,5 +9,3 @@ namespace Stockpile.Config {
     public Fetcher[] fetchers { get; set; }
   }
 }
-
-
