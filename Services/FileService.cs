@@ -3,11 +3,11 @@ using Stockpile.Config;
 
 namespace Stockpile.Services {
   public class FileService {
-    private readonly Fetcher ch_cfg_;
-    private readonly Main main_cfg_;
+    private readonly ChannelConfig ch_cfg_;
+    private readonly MainConfig main_config_;
 
-    public FileService(Main main_cfg, Fetcher ch_cfg) {
-      main_cfg_ = main_cfg;
+    public FileService(MainConfig main_config, ChannelConfig ch_cfg) {
+      main_config_ = main_config;
       ch_cfg_ = ch_cfg;
     }
 
@@ -36,7 +36,7 @@ namespace Stockpile.Services {
     }
 
     public void CopyToDelta(string fp) {
-      if (main_cfg_.staging) return;
+      if (main_config_.staging) return;
 
       string out_fp = GetMainFilePath(fp);
       string delta_fp = GetDeltaFilePath(fp);

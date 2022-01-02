@@ -5,23 +5,23 @@ using Stockpile.Config;
 
 namespace Stockpile.Services {
   public class FilterService {
-    protected readonly Fetcher cfg_;
+    private readonly ChannelConfig cfg_;
 
     /* List of found package ids */
     private readonly Dictionary<string, Filter> filters_;
-    protected readonly Main main_cfg_;
+    private readonly MainConfig main_config_;
 
-    public FilterService(Main main_cfg, Fetcher cfg) {
-      main_cfg_ = main_cfg;
+    public FilterService(MainConfig main_config, ChannelConfig cfg) {
+      main_config_ = main_config;
       cfg_ = cfg;
       filters_ = new Dictionary<string, Filter>();
       LoadFilters();
     }
 
-    protected void LoadFilters() {
+    private void LoadFilters() {
       if (cfg_.filters == null) return;
       foreach (string group_id in cfg_.filters) {
-        Dictionary<string, Filter> filter_group = main_cfg_.filters[group_id];
+        Dictionary<string, Filter> filter_group = main_config_.filters[group_id];
         /* Add all active filter groups. */
         foreach (KeyValuePair<string, Filter> filter in filter_group)
           filters_[filter.Key] = filter.Value;

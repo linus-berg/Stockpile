@@ -14,13 +14,13 @@
       }
     }
   },
-  "fetchers": [
+  "channels": [
     {
       "id": "maven",
       "type": "maven",
       "force": true,
       "filters": [],
-      "threading": {
+      "threads": {
         "parallel_pkg": 6,
         "parallel_ver": 1
       },
@@ -38,7 +38,7 @@
         "npm-filter"
       ],
       "options": "get_peers;",
-      "threading": {
+      "threads": {
         "parallel_pkg": 6,
         "parallel_ver": 1
       },
@@ -52,7 +52,7 @@
       "id": "git",
       "type": "git",
       "force": false,
-      "threading": {
+      "threads": {
         "parallel_pkg": 6,
         "parallel_ver": 1
       },
@@ -66,7 +66,7 @@
       "id": "nuget",
       "type": "nuget",
       "force": false,
-      "threading": {
+      "threads": {
         "parallel_pkg": 6,
         "parallel_ver": 1
       },

@@ -27,11 +27,11 @@ namespace Stockpile.Services {
       return db;
     }
 
-    public async Task<Artifact> AddArtifact(string id) {
-      Artifact artifact = await GetArtifact(id);
+    public async Task<Artifact> AddArtifact(string name) {
+      Artifact artifact = await GetArtifactByName(name);
       if (artifact != null) return artifact;
-      artifact  = new() {
-        Id = id,
+      artifact = new Artifact {
+        Name = name,
         Status = ArtifactStatus.OK,
         Versions = new List<ArtifactVersion>()
       };
@@ -40,7 +40,7 @@ namespace Stockpile.Services {
       return artifact;
     }
 
-    public async Task SaveArtifact(Artifact artifact) { 
+    public async Task SaveArtifact(Artifact artifact) {
       ctx_.Artifacts.Update(artifact);
       await ctx_.SaveChangesAsync();
     }
@@ -57,22 +57,8 @@ namespace Stockpile.Services {
       return await ctx_.Artifacts.Include(a => a.Versions).ToListAsync();
     }
 
-    private async Task<ArtifactVersion> GetArtifactVersion(string artifact_id,
-      string version) {
-      return await ctx_.ArtifactVersions.Where(av =>
-          av.ArtifactId == artifact_id && av.Version == version)
-        .FirstOrDefaultAsync();
-    }
-
-    public async Task BlacklistArtifact(string artifact_id, string version) {
-      ArtifactVersion a_v = await GetArtifactVersion(artifact_id, version);
-      a_v.SetStatus(ArtifactVersionStatus.BLACKLISTED);
-      ctx_.ArtifactVersions.Update(a_v);
-      await ctx_.SaveChangesAsync();
-    }
-    
-    public async Task<Artifact> GetArtifact(string id) {
-      return await ctx_.Artifacts.Where(a => a.Id == id)
+    public async Task<Artifact> GetArtifactByName(string name) {
+      return await ctx_.Artifacts.Where(a => a.Name == name)
         .Include(a => a.Versions).FirstOrDefaultAsync();
     }
   }

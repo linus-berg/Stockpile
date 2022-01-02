@@ -5,25 +5,23 @@ using System.Threading.Tasks;
 using LibGit2Sharp;
 using Stockpile.Config;
 using Stockpile.Database;
-using Stockpile.Services;
 
 namespace Stockpile.Channels {
   internal class Git : BaseChannel {
-    public Git(Main main_cfg, Fetcher cfg) : base(main_cfg, cfg) {
+    public Git(MainConfig main_config, ChannelConfig cfg) : base(main_config, cfg) {
     }
 
-    protected override string GetFilePath(ArtifactVersion version) {
+    protected override string GetFilePath(Artifact artifact,
+      ArtifactVersion version) {
       return "";
     }
 
-    protected override Task Get(string id) {
-      Update(id, Operation.DOWNLOAD);
-      ms_.Add(id);
+    protected override Task InspectArtifact(Artifact artifact) {
       return Task.CompletedTask;
     }
 
-    protected override Task ProcessIds() {
-      HashSet<string> ids = ms_.GetMemory();
+    protected override Task ProcessAllArtifacts() {
+      HashSet<string> ids = GetAllArtifactsInMemory();
       foreach (string id in ids) ProcessRepo(id);
       return Task.CompletedTask;
     }

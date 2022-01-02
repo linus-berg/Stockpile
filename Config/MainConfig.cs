@@ -2,15 +2,15 @@
 using System.Linq;
 
 namespace Stockpile.Config {
-  public class Main {
+  public class MainConfig {
     public string delta_format { get; set; }
     public string db_path { get; set; }
     public bool staging { get; set; }
     public Dictionary<string, Dictionary<string, Filter>> filters { get; set; }
-    public Fetcher[] fetchers { get; set; }
+    public ChannelConfig[] channels { get; set; }
 
-    public Fetcher GetChannelConfig(string channel_id) {
-      return fetchers.FirstOrDefault(ch => ch.id == channel_id);
+    public ChannelConfig GetChannelConfig(string channel_id) {
+      return channels.FirstOrDefault(ch => ch.id == channel_id);
     }
   }
 }

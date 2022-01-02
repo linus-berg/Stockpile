@@ -3,13 +3,13 @@ using Stockpile.Config;
 
 namespace Stockpile.Services {
   public class MemoryService {
-    protected readonly Fetcher cfg_;
+    protected readonly ChannelConfig cfg_;
     protected readonly DatabaseService db_;
     private readonly HashSet<string> error_;
 
     /* List of found package ids */
     private readonly HashSet<string> found_;
-    protected readonly Main main_cfg_;
+    protected readonly MainConfig main_config;
     private int packages_;
 
     public MemoryService() {

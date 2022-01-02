@@ -26,30 +26,29 @@ namespace Stockpile {
           err => 1);
       return 0;
     }
-    
-    private static Main GetConfigFile(string config) {
+
+    private static MainConfig GetConfigFile(string config) {
       if (!File.Exists(config)) throw new FileNotFoundException(config);
-      return JsonSerializer.Deserialize<Main>(File.ReadAllText(config));
+      return JsonSerializer.Deserialize<MainConfig>(File.ReadAllText(config));
     }
 
     private static int RunStockpile(StockpileOptions options) {
-      Main config = GetConfigFile(options.config);
+      MainConfig config = GetConfigFile(options.config);
       config.staging = options.staging || config.staging;
-      List<ArtifactService> fetchers = config.fetchers.Select(fetcher => new ArtifactService(config, fetcher)).ToList();
+      List<ArtifactService> fetchers = config.channels
+        .Select(fetcher => new ArtifactService(config, fetcher)).ToList();
       Task.WaitAll(fetchers.Select(a_s => a_s.Start()).ToArray());
       return 0;
     }
 
     private static int RunBlacklist(BlacklistOptions options) {
-      Main config = GetConfigFile(options.config);
-      ArtifactService artifact_service = new ArtifactService(config, options.ChannelId);
+      MainConfig config = GetConfigFile(options.config);
+      ArtifactService artifact_service = new(config, options.ChannelId);
       BaseChannel base_channel = artifact_service.GetChannel();
-      base_channel.BlacklistArtifact(options.ArtifactId, options.Version)
-        .Wait();
       return 0;
     }
 
-    private static ArtifactService GetArtifactService(Main config,
+    private static ArtifactService GetArtifactService(MainConfig config,
       string channel_id) {
       return new ArtifactService(config, channel_id);
     }

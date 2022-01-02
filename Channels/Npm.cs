@@ -7,7 +7,6 @@ using RestSharp;
 using Stockpile.Config;
 using Stockpile.Database;
 using Stockpile.PackageModels.Npm;
-using Stockpile.Services;
 
 namespace Stockpile.Channels {
   public class Npm : BaseChannel {
@@ -16,64 +15,56 @@ namespace Stockpile.Channels {
     private readonly bool get_dev_deps_;
     private readonly bool get_peer_deps_;
 
-    public Npm(Main main_cfg, Fetcher cfg) : base(main_cfg, cfg) {
-      if (cfg.options == null) {
+    public Npm(MainConfig main_config, ChannelConfig cfg) : base(main_config, cfg) {
+      if (cfg.options == null)
         throw new NoNullAllowedException("Config options was null.");
-      };
+      ;
       string[] options = cfg.options.Replace(" ", "").Split(';');
       if (options.Contains("get_peers")) get_peer_deps_ = true;
       if (options.Contains("get_dev")) get_dev_deps_ = true;
     }
 
-    protected override string GetFilePath(ArtifactVersion version) {
+    protected override string GetFilePath(Artifact artifact,
+      ArtifactVersion version) {
       return StripRegistry(version.Url).Replace("/-/", "/");
     }
 
-    protected override async Task Get(string id) {
-      Depth++;
-      Metadata metadata = await GetMetadata(id);
-      /* Memorize to never visit this node again */
-      ms_.Add(id);
-      Update(id, Operation.INSPECT);
-      if (metadata == null || metadata.versions == null)
-        ms_.SetError(id);
+    protected override async Task InspectArtifact(Artifact artifact) {
+      Metadata metadata = await GetMetadata(artifact.Name);
+      if (metadata?.versions == null)
+        SetArtifactError(artifact);
       else
-        await AddTransient(id, metadata);
-      Depth--;
+        await ProcessArtifactVersions(artifact, metadata);
     }
 
-    private async Task AddTransient(string id, Metadata metadata) {
-      /* Add the artifact if it does not exist */
-      Artifact artifact = await db_.AddArtifact(id);
-      
-      /* For each version, add each versions dependencies! */
-      foreach (KeyValuePair<string, PackageModels.Npm.Package> kv in metadata.versions) {
-        /* Should version be filtered? */
-        if (!fi_.Exec(id, kv.Key, 0, null)) continue;
-        PackageModels.Npm.Package package = kv.Value;
-        string version = kv.Key;
-        string url = package.dist.tarball ?? "";
-        /* If package already in database AND FULLY PROCESSED */
-        /* Do not reprocess dependency tree. */
-        if (artifact.IsVersionProcessed(version)) {
-          continue;
-        }
-        /* Get all types of dependencies. */
-        await GetDependencies(package.dependencies);
-        if (get_peer_deps_) await GetDependencies(package.peerDependencies);
-        if (get_dev_deps_) await GetDependencies(package.devDependencies);
-        /* Upon walking back up the tree, set that this packages dependencies has been found. */
-        artifact.SetVersionAsProcessed(version, url);
+    private async Task ProcessArtifactVersions(Artifact artifact,
+      Metadata metadata) {
+      foreach (KeyValuePair<string, Package> kv in metadata.versions) {
+        Package package = kv.Value;
+        string v = kv.Key;
+        string u = package.dist.tarball ?? "";
+        ArtifactVersion version = artifact.AddVersionIfNotExists(v, u);
+        if (!version.ShouldProcess()) continue;
+        await ProcessArtifactVersionDependencies(package);
+        /* Set version to processed */
+        version.SetStatus(ArtifactVersionStatus.PROCESSED);
       }
-      await db_.SaveArtifact(artifact);
+    }
+
+    private async Task ProcessArtifactVersionDependencies(Package package) {
+      /* Get primary dependencies. */
+      await GetDependencies(package.dependencies);
+      /* Get Peer dependencies */
+      if (get_peer_deps_) await GetDependencies(package.peerDependencies);
+      /* Get Dev dependencies */
+      if (get_dev_deps_) await GetDependencies(package.devDependencies);
     }
 
     private async Task
       GetDependencies(Dictionary<string, string> dependencies) {
       if (dependencies == null) return;
       foreach (KeyValuePair<string, string> p in dependencies)
-        if (!ms_.Exists(p.Key))
-          await Get(p.Key);
+        await AddArtifactIdToStack(p.Key);
     }
 
     private async Task<Metadata> GetMetadata(string id) {

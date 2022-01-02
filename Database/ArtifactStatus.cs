@@ -1,5 +1,6 @@
 namespace Stockpile.Database {
   public enum ArtifactStatus {
-    OK
+    OK,
+    ERROR
   }
 }

@@ -6,7 +6,6 @@ using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using Stockpile.Config;
 using Stockpile.Database;
-using Stockpile.Services;
 
 namespace Stockpile.Channels {
   internal class Nuget : BaseChannel {
@@ -17,45 +16,37 @@ namespace Stockpile.Channels {
     private readonly SourceRepository repository_;
     private FindPackageByIdResource resource_;
 
-    public Nuget(Main main_cfg, Fetcher cfg) : base(main_cfg, cfg) {
+    public Nuget(MainConfig main_config, ChannelConfig cfg) : base(main_config, cfg) {
       repository_ = Repository.Factory.GetCoreV3(API_);
       meta_res_ = repository_.GetResource<PackageMetadataResource>();
       resource_ = repository_.GetResource<FindPackageByIdResource>();
       cache_ = new SourceCacheContext();
     }
 
-    protected override string GetFilePath(ArtifactVersion version) {
-      return $"{version.ArtifactId}/{version.ArtifactId}.{version.Version}.nupkg";
+    protected override string GetFilePath(Artifact artifact,
+      ArtifactVersion version) {
+      return $"{artifact.Name}/{artifact.Name}.{version.Version}.nupkg";
     }
 
-    protected override async Task Get(string id) {
-      Update(id, Operation.INSPECT);
-      Depth++;
-      /* Memorize to not check again */
-      ms_.Add(id);
-      IEnumerable<IPackageSearchMetadata> versions = await GetMetadata(id);
-
-      Artifact artifact = await db_.AddArtifact(id);
-      
+    protected override async Task InspectArtifact(Artifact artifact) {
+      IEnumerable<IPackageSearchMetadata> versions =
+        await GetMetadata(artifact.Name);
       foreach (IPackageSearchMetadata version in versions) {
         string v = version.Identity.Version.ToString();
-        string u = NUGET_ + $"{id}/{v}/{id}.{v}.nupkg";
-        if (artifact.IsVersionProcessed(v)) {
-          continue;
-        }
-        await AddTransient(version.DependencySets);
+        string u = NUGET_ + $"{artifact.Name}/{v}/{artifact.Name}.{v}.nupkg";
+        ArtifactVersion a_v = artifact.AddVersionIfNotExists(v, u);
+        if (!a_v.ShouldProcess()) continue;
+        await ProcessArtifactDependencies(version.DependencySets);
         /* Set dependency has been processed */
-        artifact.SetVersionAsProcessed(v, u);
+        a_v.SetStatus(ArtifactVersionStatus.PROCESSED);
       }
-      await db_.SaveArtifact(artifact);
-      Depth--;
     }
 
-    private async Task AddTransient(IEnumerable<PackageDependencyGroup> deps) {
+    private async Task ProcessArtifactDependencies(
+      IEnumerable<PackageDependencyGroup> deps) {
       foreach (PackageDependencyGroup x in deps)
       foreach (PackageDependency pkg in x.Packages)
-        if (!ms_.Exists(pkg.Id))
-          await Get(pkg.Id);
+        await AddArtifactIdToStack(pkg.Id);
     }
 
     private async Task<IEnumerable<IPackageSearchMetadata>> GetMetadata(

@@ -1,16 +1,16 @@
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using LibGit2Sharp;
 
 namespace Stockpile.Database {
   public class Artifact {
-    public string Id { get; set; }
+    public int Id { get; set; }
+    public string Name { get; set; }
     public ArtifactStatus Status { get; set; }
     public List<ArtifactVersion> Versions { get; set; }
 
-    public ArtifactVersion AddVersion(string version, string url) {
-      ArtifactVersion a_v = new ArtifactVersion {
+    public ArtifactVersion AddVersionIfNotExists(string version, string url) {
+      if (HasVersion(version)) return GetVersion(version);
+      ArtifactVersion a_v = new() {
         Url = url,
         Version = version,
         Status = ArtifactVersionStatus.UNPROCESSED
@@ -19,17 +19,16 @@ namespace Stockpile.Database {
       return a_v;
     }
 
-    public void SetVersionAsProcessed(string version, string url) {
-      ArtifactVersion av = GetVersion(version) ?? AddVersion(version, url);
+    public void SetVersionToProcessed(string version) {
+      ArtifactVersion av = GetVersion(version);
       av.SetStatus(ArtifactVersionStatus.PROCESSED);
     }
-    
-    public bool IsVersionProcessed(string version) {
-      ArtifactVersion a_v = GetVersion(version);
-      return a_v != null && a_v.IsProcessed();
+
+    private bool HasVersion(string version) {
+      return Versions.Exists(v => v.Version == version);
     }
-    
-    public ArtifactVersion GetVersion(string version) {
+
+    private ArtifactVersion GetVersion(string version) {
       return Versions.FirstOrDefault(v => v.Version == version);
     }
   }
