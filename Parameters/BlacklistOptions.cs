@@ -1,6 +1,6 @@
 using CommandLine;
 
-namespace Stockpile.CLI {
+namespace Stockpile.Parameters {
   [Verb("blacklist", HelpText = "Blacklist package")]
   public class BlacklistOptions : CommonOptions {
     [Option('c', "channelId", Required = true)]

@@ -1,6 +1,6 @@
 namespace Stockpile.Config {
-  public class ChannelOutput {
-    public string full { get; set; }
+  public class ChannelDeposit {
+    public string main { get; set; }
     public string delta { get; set; }
   }
 }

@@ -1,4 +1,4 @@
-namespace Stockpile.Services {
+namespace Stockpile.Constants {
   public enum Operation {
     INSPECT = 0,
     DOWNLOAD = 1,

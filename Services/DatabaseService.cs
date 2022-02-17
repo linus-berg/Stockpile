@@ -3,7 +3,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Stockpile.Database;
+using Stockpile.Infrastructure;
+using Stockpile.Infrastructure.Entities;
 
 namespace Stockpile.Services {
   public class DatabaseService {

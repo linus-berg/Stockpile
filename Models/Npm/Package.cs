@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Stockpile.PackageModels.Npm {
+namespace Stockpile.Models.Npm {
   public class Package {
     public Dictionary<string, string> dependencies { get; set; }
     public Dictionary<string, string> peerDependencies { get; set; }

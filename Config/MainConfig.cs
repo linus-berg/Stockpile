@@ -6,7 +6,7 @@ namespace Stockpile.Config {
     public string delta_format { get; set; }
     public string db_path { get; set; }
     public bool staging { get; set; }
-    public Dictionary<string, Dictionary<string, Filter>> filters { get; set; }
+    public Dictionary<string, Dictionary<string, ChannelFilter>> filters { get; set; }
     public ChannelConfig[] channels { get; set; }
 
     public ChannelConfig GetChannelConfig(string channel_id) {

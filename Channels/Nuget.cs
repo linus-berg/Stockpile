@@ -5,10 +5,11 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using Stockpile.Config;
-using Stockpile.Database;
+using Stockpile.Infrastructure;
+using Stockpile.Infrastructure.Entities;
 
 namespace Stockpile.Channels {
-  internal class Nuget : BaseChannel {
+  internal class Nuget : Channel {
     private const string API_ = "https://api.nuget.org/v3/index.json";
     private const string NUGET_ = "https://api.nuget.org/v3-flatcontainer/";
     private readonly SourceCacheContext cache_;
@@ -24,7 +25,7 @@ namespace Stockpile.Channels {
       cache_ = new SourceCacheContext();
     }
 
-    protected override string GetFilePath(Artifact artifact,
+    protected override string GetDepositPath(Artifact artifact,
       ArtifactVersion version) {
       return $"{artifact.Name}/{artifact.Name}.{version.Version}.nupkg";
     }
@@ -36,7 +37,7 @@ namespace Stockpile.Channels {
         string v = version.Identity.Version.ToString();
         string u = NUGET_ + $"{artifact.Name}/{v}/{artifact.Name}.{v}.nupkg";
         ArtifactVersion a_v = artifact.AddVersionIfNotExists(v, u);
-        if (!a_v.ShouldProcess()) continue;
+        if (a_v.IsProcessed()) continue;
         await ProcessArtifactDependencies(version.DependencySets);
         /* Set dependency has been processed */
         a_v.SetStatus(ArtifactVersionStatus.PROCESSED);

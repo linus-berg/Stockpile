@@ -6,11 +6,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Common;
 using Stockpile.Config;
-using Stockpile.Database;
+using Stockpile.Constants;
+using Stockpile.Infrastructure;
+using Stockpile.Infrastructure.Entities;
 using Stockpile.Services;
 
 namespace Stockpile.Channels {
-  public abstract class BaseChannel {
+  public abstract class Channel {
     protected readonly ChannelConfig cfg_;
 
     /* Stockpile services */
@@ -30,7 +32,7 @@ namespace Stockpile.Channels {
     private int max_tree_depth_;
     private int versions_;
 
-    protected BaseChannel(MainConfig main_config, ChannelConfig cfg) {
+    protected Channel(MainConfig main_config, ChannelConfig cfg) {
       package_list_ = File.ReadAllLines(cfg.input);
       main_config_ = main_config;
       cfg_ = cfg;
@@ -41,6 +43,8 @@ namespace Stockpile.Channels {
       fs_ = new FileService(main_config, cfg);
       fi_ = new FilterService(main_config, cfg);
       ms_ = new MemoryService();
+      
+      /* If this channel has warnings due to configuration */
       IssueWarning();
     }
 
@@ -72,10 +76,13 @@ namespace Stockpile.Channels {
         if (!ms_.Exists(id)) {
           ms_.Add(id);
           Artifact artifact = await CreateOrGetArtifact(id);
-
           /* Add the versions from the external source */
           Update(artifact.Name, Operation.INSPECT);
+          
+          /* This is implemented by individual channels */
           await InspectArtifact(artifact);
+          /* --- */
+          
           if (artifact.Status != ArtifactStatus.ERROR)
             artifact.Status = ArtifactStatus.PROCESSED;
           /* Save the artifact changes */
@@ -87,7 +94,6 @@ namespace Stockpile.Channels {
         ds_.PostError(e.ToString());
         Console.WriteLine(e);
       }
-
       Depth--;
     }
 
@@ -115,28 +121,25 @@ namespace Stockpile.Channels {
       /* Parallel, max 5 concurrent fetchers */
       IEnumerable<Artifact> artifacts = await db_.GetArtifacts();
       /* Set the counts based on what is in database. */
-      int p_c = await db_.GetArtifactCount();
-      int v_c = await db_.GetArtifactVersionCount();
-      versions_ = v_c;
-      ms_.SetCount(p_c);
+      ms_.SetCount(await db_.GetArtifactCount());
+      versions_ = await db_.GetArtifactVersionCount();
       /* Process all IDs in parallel based on configuration */
       Parallel.ForEach(artifacts, new ParallelOptions {
         MaxDegreeOfParallelism = cfg_.threads.parallel_pkg
-      }, artifact => { TryDownloadArtifact(artifact).Wait(ct_); });
+      }, artifact => { DownloadAllVersions(artifact).Wait(ct_); });
       Update("", Operation.COMPLETED);
     }
 
-    private async Task TryDownloadArtifact(Artifact artifact) {
+    private async Task DownloadAllVersions(Artifact artifact) {
       try {
         if (ms_.IsValid(artifact.Name)) {
           List<ArtifactVersion> versions = artifact.Versions.ToList();
-          for (int i = 0; i < versions.Count; i++) {
+          int count = versions.Count;
+          for (int i = 0; i < count; i++) {
             ArtifactVersion version = versions[i];
             if (!ShouldDownloadVersion(artifact, version)) continue;
-            await TryDownloadArtifactVersion(version,
-              GetFilePath(artifact, version));
-            ds_.PostDownload(artifact.Name, version.Version, i + 1,
-              versions.Count);
+            await TryDownloadVersion(version, GetDepositPath(artifact, version));
+            ds_.PostDownload(artifact, version, i + 1, count);
           }
         }
       }
@@ -147,18 +150,17 @@ namespace Stockpile.Channels {
 
     private bool ShouldDownloadVersion(Artifact artifact,
       ArtifactVersion version) {
-      return version.Status != ArtifactVersionStatus.BLACKLISTED &&
+      return !version.IsBlacklisted() &&
              fi_.Exec(artifact.Name, version.Version, 0, "");
     }
 
-    /* Try download a remote file */
     private async Task
-      TryDownloadArtifactVersion(ArtifactVersion version, string path) {
+      TryDownloadVersion(ArtifactVersion version, string path) {
       try {
         if (string.IsNullOrEmpty(version.Url))
           throw new ArgumentNullException(
             $"{version.ArtifactId} tarball is null.");
-        await DownloadArtifactVersion(version, path);
+        await DownloadVersion(version, path);
       }
       catch (Exception ex) {
         ds_.PostError(
@@ -167,8 +169,7 @@ namespace Stockpile.Channels {
     }
 
     /* Download remote file. */
-    private async Task DownloadArtifactVersion(ArtifactVersion version,
-      string path) {
+    private async Task DownloadVersion(ArtifactVersion version, string path) {
       string out_fp = fs_.GetMainFilePath(path);
       FileService.CreateDirectory(out_fp);
       if (FileService.OnDisk(out_fp)) {
@@ -179,17 +180,16 @@ namespace Stockpile.Channels {
           return;
       }
 
-      /* If not on disk and the download succeeded */
       RemoteFile file = new(version.Url, ds_);
       if (await file.Get(out_fp))
         fs_.CopyToDelta(path);
       else
         ds_.PostError($" Download failed {cfg_.id}->{version.Url}");
     }
-
+  
+    /* Required to be overriden by each channel. */
     protected abstract Task InspectArtifact(Artifact artifact);
-
-    protected abstract string GetFilePath(Artifact artifact,
+    protected abstract string GetDepositPath(Artifact artifact,
       ArtifactVersion version);
   }
 }

@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace Stockpile.CLI {
+namespace Stockpile.Parameters {
   [Verb("stockpile", true, HelpText = "Run the stockpiler")]
   public class StockpileOptions : CommonOptions {
     [Option('s', "staging", Required = false,

@@ -6,11 +6,12 @@ using System.Xml.Serialization;
 using MavenNet;
 using MavenNet.Models;
 using Stockpile.Config;
-using Stockpile.Database;
-using Artifact = Stockpile.Database.Artifact;
+using Stockpile.Infrastructure;
+using Stockpile.Infrastructure.Entities;
+using Artifact = Stockpile.Infrastructure.Entities.Artifact;
 
 namespace Stockpile.Channels {
-  internal class Maven : BaseChannel {
+  internal class Maven : Channel {
     private const string MAVEN_ = "https://repo1.maven.org/maven2";
 
     private readonly FileMap[] FILE_MAPS = {
@@ -39,7 +40,7 @@ namespace Stockpile.Channels {
       repo_ = MavenRepository.FromMavenCentral();
     }
 
-    protected override string GetFilePath(Artifact artifact,
+    protected override string GetDepositPath(Artifact artifact,
       ArtifactVersion version) {
       return version.Url.Replace(MAVEN_ + "/", "");
     }
@@ -68,7 +69,7 @@ namespace Stockpile.Channels {
           Artifact db_artifact = await db_.AddArtifact(fm_id);
           artifacts[fm_id] = db_artifact;
           ArtifactVersion a_v = db_artifact.AddVersionIfNotExists(version, url);
-          if (a_v.ShouldProcess()) continue;
+          if (a_v.IsProcessed()) continue;
           process_dependencies = true;
         }
 

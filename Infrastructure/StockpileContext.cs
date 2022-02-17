@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Stockpile.Infrastructure.Entities;
 
-namespace Stockpile.Database {
+namespace Stockpile.Infrastructure {
   public class StockpileContext : DbContext {
     private readonly string db_path_;
 

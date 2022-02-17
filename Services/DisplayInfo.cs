@@ -1,3 +1,5 @@
+using Stockpile.Constants;
+
 namespace Stockpile.Services {
   public class DisplayInfo {
     public string Message { get; set; }

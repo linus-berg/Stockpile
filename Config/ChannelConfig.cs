@@ -6,7 +6,7 @@
     public ChannelThreads threads { get; set; }
     public string[] filters { get; set; }
     public string input { get; set; }
-    public ChannelOutput output { get; set; }
+    public ChannelDeposit deposits { get; set; }
     public string options { get; set; }
   }
 }

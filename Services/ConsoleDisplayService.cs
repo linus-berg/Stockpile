@@ -1,4 +1,6 @@
 using System;
+using Stockpile.Constants;
+using Stockpile.Infrastructure.Entities;
 
 namespace Stockpile.Services {
   public class ConsoleDisplayService : IDisplayService {
@@ -27,8 +29,8 @@ namespace Stockpile.Services {
       Post(msg, info.Operation);
     }
 
-    public void PostDownload(string id, string v, int c, int m) {
-      Post($"[{id}][{v}][{c}/{m}]", Operation.DOWNLOAD);
+    public void PostDownload(Artifact artifact, ArtifactVersion version, int c, int m) {
+      Post($"[{artifact.Name}][{version.Version}][{c}/{m}]", Operation.DOWNLOAD);
     }
 
     ~ConsoleDisplayService() {

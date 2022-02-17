@@ -6,8 +6,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CommandLine;
 using Stockpile.Channels;
-using Stockpile.CLI;
 using Stockpile.Config;
+using Stockpile.Parameters;
 using Stockpile.Services;
 
 namespace Stockpile {
@@ -44,7 +44,7 @@ namespace Stockpile {
     private static int RunBlacklist(BlacklistOptions options) {
       MainConfig config = GetConfigFile(options.config);
       ArtifactService artifact_service = new(config, options.ChannelId);
-      BaseChannel base_channel = artifact_service.GetChannel();
+      Channel channel = artifact_service.GetChannel();
       return 0;
     }
 

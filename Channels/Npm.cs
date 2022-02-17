@@ -5,11 +5,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using RestSharp;
 using Stockpile.Config;
-using Stockpile.Database;
-using Stockpile.PackageModels.Npm;
+using Stockpile.Infrastructure;
+using Stockpile.Infrastructure.Entities;
+using Stockpile.Models.Npm;
 
 namespace Stockpile.Channels {
-  public class Npm : BaseChannel {
+  public class Npm : Channel {
     private const string API_ = "https://registry.npmjs.org/";
     private readonly RestClient client_ = new(API_);
     private readonly bool get_dev_deps_;
@@ -19,13 +20,12 @@ namespace Stockpile.Channels {
       cfg) {
       if (cfg.options == null)
         throw new NoNullAllowedException("Config options was null.");
-      ;
       string[] options = cfg.options.Replace(" ", "").Split(';');
       if (options.Contains("get_peers")) get_peer_deps_ = true;
       if (options.Contains("get_dev")) get_dev_deps_ = true;
     }
 
-    protected override string GetFilePath(Artifact artifact,
+    protected override string GetDepositPath(Artifact artifact,
       ArtifactVersion version) {
       return StripRegistry(version.Url).Replace("/-/", "/");
     }
@@ -42,10 +42,9 @@ namespace Stockpile.Channels {
       Metadata metadata) {
       foreach (KeyValuePair<string, Package> kv in metadata.versions) {
         Package package = kv.Value;
-        string v = kv.Key;
-        string u = package.dist.tarball ?? "";
-        ArtifactVersion version = artifact.AddVersionIfNotExists(v, u);
-        if (!version.ShouldProcess()) continue;
+        ArtifactVersion version =
+          artifact.AddVersionIfNotExists(kv.Key, package.dist.tarball);
+        if (version.IsProcessed()) continue;
         await ProcessArtifactVersionDependencies(package);
         /* Set version to processed */
         version.SetStatus(ArtifactVersionStatus.PROCESSED);
@@ -64,13 +63,14 @@ namespace Stockpile.Channels {
     private async Task
       GetDependencies(Dictionary<string, string> dependencies) {
       if (dependencies == null) return;
-      foreach (KeyValuePair<string, string> p in dependencies)
-        await TryInspectArtifact(p.Key);
+      foreach (KeyValuePair<string, string> package in dependencies)
+        await TryInspectArtifact(package.Key);
     }
 
     private async Task<Metadata> GetMetadata(string id) {
       try {
-        return await client_.GetAsync<Metadata>(CreateRequest($"{id}/"));
+        return await client_.GetAsync<Metadata>(
+          new RestRequest($"{id}/", DataFormat.Json));
       }
       catch (Exception ex) {
         ds_.PostError($"Metadata error -> {id} - {ex}");
@@ -80,11 +80,6 @@ namespace Stockpile.Channels {
 
     private static string StripRegistry(string url) {
       return url.Replace(API_, "");
-    }
-
-    private static IRestRequest CreateRequest(string url,
-      DataFormat fmt = DataFormat.Json) {
-      return new RestRequest(url, fmt);
     }
   }
 }

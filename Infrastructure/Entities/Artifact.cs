@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Stockpile.Database {
+namespace Stockpile.Infrastructure.Entities {
   public class Artifact {
     public int Id { get; set; }
     public string Name { get; set; }
@@ -11,7 +11,7 @@ namespace Stockpile.Database {
     public ArtifactVersion AddVersionIfNotExists(string version, string url) {
       if (HasVersion(version)) return GetVersion(version);
       ArtifactVersion a_v = new() {
-        Url = url,
+        Url = url ?? "",
         Version = version,
         Status = ArtifactVersionStatus.UNPROCESSED
       };

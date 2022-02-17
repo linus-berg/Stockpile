@@ -25,8 +25,8 @@
         "parallel_ver": 1
       },
       "input": "./Input/MAVEN.txt",
-      "output": {
-        "full": "./Output/maven/full/",
+      "deposits": {
+        "main": "./Output/maven/full/",
         "delta": "./Output/maven/delta/"
       }
     },
@@ -43,8 +43,8 @@
         "parallel_ver": 1
       },
       "input": "./Input/NPM.txt",
-      "output": {
-        "full": "./Output/npm/full/",
+      "deposits": {
+        "main": "./Output/npm/full/",
         "delta": "./Output/npm/delta/"
       }
     },
@@ -57,8 +57,8 @@
         "parallel_ver": 1
       },
       "input": "./Input/GIT.txt",
-      "output": {
-        "full": "./Output/git/full/",
+      "deposits": {
+        "main": "./Output/git/full/",
         "delta": "./Output/git/delta/"
       }
     },
@@ -71,8 +71,8 @@
         "parallel_ver": 1
       },
       "input": "./Input/NUGET.txt",
-      "output": {
-        "full": "./Output/nuget/full/",
+      "deposits": {
+        "main": "./Output/nuget/full/",
         "delta": "./Output/nuget/delta/"
       }
     }

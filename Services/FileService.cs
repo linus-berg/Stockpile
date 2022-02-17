@@ -16,11 +16,11 @@ namespace Stockpile.Services {
     }
 
     public string GetMainFilePath(string filename) {
-      return GetAbsolutePath(ch_cfg_.output.full, filename);
+      return GetAbsolutePath(ch_cfg_.deposits.main, filename);
     }
 
     public string GetDeltaFilePath(string filepath) {
-      return GetAbsolutePath(ch_cfg_.output.delta, filepath);
+      return GetAbsolutePath(ch_cfg_.deposits.delta, filepath);
     }
 
     public static long GetSize(string path) {

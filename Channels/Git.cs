@@ -4,15 +4,16 @@ using System.IO;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Stockpile.Config;
-using Stockpile.Database;
+using Stockpile.Infrastructure;
+using Stockpile.Infrastructure.Entities;
 
 namespace Stockpile.Channels {
-  internal class Git : BaseChannel {
+  internal class Git : Channel {
     public Git(MainConfig main_config, ChannelConfig cfg) : base(main_config,
       cfg) {
     }
 
-    protected override string GetFilePath(Artifact artifact,
+    protected override string GetDepositPath(Artifact artifact,
       ArtifactVersion version) {
       return "";
     }
@@ -29,7 +30,7 @@ namespace Stockpile.Channels {
 
     private void ProcessRepo(string id) {
       Uri uri = new(id);
-      string abs_path = Path.GetFullPath(cfg_.output.full);
+      string abs_path = Path.GetFullPath(cfg_.deposits.main);
       string path = Path.Join(abs_path + uri.Host.Replace("www", ""),
         uri.AbsolutePath);
 
