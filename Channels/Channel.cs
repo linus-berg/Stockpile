@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using NuGet.Common;
 using Stockpile.Config;
 using Stockpile.Constants;
-using Stockpile.Infrastructure;
 using Stockpile.Infrastructure.Entities;
 using Stockpile.Services;
 
@@ -20,7 +19,6 @@ namespace Stockpile.Channels {
     protected readonly IDisplayService ds_;
     private readonly FilterService fi_;
     private readonly FileService fs_;
-
 
     /* List of found package ids */
     protected readonly ILogger logger_ = NullLogger.Instance;
@@ -36,7 +34,6 @@ namespace Stockpile.Channels {
       package_list_ = File.ReadAllLines(cfg.input);
       main_config_ = main_config;
       cfg_ = cfg;
-
       /* Services */
       db_ = DatabaseService.Open(cfg.id);
       ds_ = new ConsoleDisplayService(cfg.id);

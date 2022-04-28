@@ -1,3 +1,2 @@
 moment
-loose-envify
 react

@@ -12,7 +12,7 @@ namespace Stockpile.Services {
     }
 
     public void Post(string msg, Operation op) {
-      Console.WriteLine($"{GetPrefix(op)}->{msg}");
+      Console.WriteLine($"{GetPrefix(op), -18}{msg}");
     }
 
     public void PostError(string msg) {
@@ -24,13 +24,13 @@ namespace Stockpile.Services {
     }
 
     public void PostInfo(DisplayInfo info) {
-      string msg = $"[{info.Packages}][{info.Versions}]";
-      msg += $"[{info.CurrentTreeDepth}/{info.MaxTreeDepth}][{info.Message}]";
+      string msg = $"{info.Packages}/{info.Versions, -6}";
+      msg += $"{info.CurrentTreeDepth}/{info.MaxTreeDepth, -6}{info.Message}";
       Post(msg, info.Operation);
     }
 
     public void PostDownload(Artifact artifact, ArtifactVersion version, int c, int m) {
-      Post($"[{artifact.Name}][{version.Version}][{c}/{m}]", Operation.DOWNLOAD);
+      Post($"{artifact.Name}/{version.Version, -10} [{c}/{m}]", Operation.DOWNLOAD);
     }
 
     ~ConsoleDisplayService() {
@@ -38,7 +38,7 @@ namespace Stockpile.Services {
     }
 
     private string GetPrefix(Operation op) {
-      return $"[{id_}][{op.ToString()}]";
+      return $"{id_}/{op.ToString()}>";
     }
   }
 }

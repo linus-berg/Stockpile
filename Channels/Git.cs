@@ -4,7 +4,6 @@ using System.IO;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Stockpile.Config;
-using Stockpile.Infrastructure;
 using Stockpile.Infrastructure.Entities;
 
 namespace Stockpile.Channels {

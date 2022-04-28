@@ -16,6 +16,22 @@
   },
   "channels": [
     {
+      "id": "docker",
+      "type": "docker",
+      "force": true,
+      "filters": [],
+      "threads": {
+        "parallel_pkg": 6,
+        "parallel_ver": 1
+      },
+      "input": "./Input/DOCKER.txt",
+      "options": "registry=https://hub.docker.com",
+      "deposits": {
+        "main": "./Output/docker/main/",
+        "delta": "./Output/docker/delta/"
+      }
+    },
+    {
       "id": "maven",
       "type": "maven",
       "force": true,
@@ -26,7 +42,7 @@
       },
       "input": "./Input/MAVEN.txt",
       "deposits": {
-        "main": "./Output/maven/full/",
+        "main": "./Output/maven/main/",
         "delta": "./Output/maven/delta/"
       }
     },
@@ -44,7 +60,7 @@
       },
       "input": "./Input/NPM.txt",
       "deposits": {
-        "main": "./Output/npm/full/",
+        "main": "./Output/npm/main/",
         "delta": "./Output/npm/delta/"
       }
     },
@@ -58,7 +74,7 @@
       },
       "input": "./Input/GIT.txt",
       "deposits": {
-        "main": "./Output/git/full/",
+        "main": "./Output/git/main/",
         "delta": "./Output/git/delta/"
       }
     },
@@ -72,7 +88,7 @@
       },
       "input": "./Input/NUGET.txt",
       "deposits": {
-        "main": "./Output/nuget/full/",
+        "main": "./Output/nuget/main/",
         "delta": "./Output/nuget/delta/"
       }
     }

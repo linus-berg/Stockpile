@@ -4,6 +4,7 @@ namespace Stockpile.Constants {
     DOWNLOAD = 1,
     COMPLETED = 2,
     WARNING = 100,
-    ERROR = 101
+    ERROR = 101,
+    INFO = 200
   }
 }
