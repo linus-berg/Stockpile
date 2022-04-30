@@ -25,7 +25,6 @@
         "parallel_ver": 1
       },
       "input": "./Input/DOCKER.txt",
-      "options": "registry=https://hub.docker.com",
       "deposits": {
         "main": "./Output/docker/main/",
         "delta": "./Output/docker/delta/"
@@ -53,7 +52,9 @@
       "filters": [
         "npm-filter"
       ],
-      "options": "get_peers;",
+      "options": {
+        "get_peers": "true"
+      },
       "threads": {
         "parallel_pkg": 6,
         "parallel_ver": 1

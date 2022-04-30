@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Threading.Tasks;
 using RestSharp;
 using Stockpile.Config;
-using Stockpile.Infrastructure;
 using Stockpile.Infrastructure.Entities;
 using Stockpile.Models.Npm;
 
@@ -20,9 +18,10 @@ namespace Stockpile.Channels {
       cfg) {
       if (cfg.options == null)
         throw new NoNullAllowedException("Config options was null.");
-      string[] options = cfg.options.Replace(" ", "").Split(';');
-      if (options.Contains("get_peers")) get_peer_deps_ = true;
-      if (options.Contains("get_dev")) get_dev_deps_ = true;
+      if (cfg.options.ContainsKey("get_peers") && cfg.options["get_peers"] == "true") 
+        get_peer_deps_ = true;
+      if (cfg.options.ContainsKey("get_dev") && cfg.options["get_dev"] == "true") 
+        get_dev_deps_ = true;
     }
 
     protected override string GetDepositPath(Artifact artifact,

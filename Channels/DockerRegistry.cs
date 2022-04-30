@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 using Stockpile.Config;
 using Stockpile.Infrastructure.Entities;
@@ -10,30 +9,11 @@ using System.IO;
 
 namespace Stockpile.Channels {
   public class DockerRegistry : Channel {
-    private readonly string REGISTRY_;
     private readonly DockerClient client_;
 
     public DockerRegistry(MainConfig main_config, ChannelConfig cfg) : base(main_config,
       cfg) {
-      if (cfg.options == null)
-        throw new NoNullAllowedException("Config options was null.");
-      string[] options = cfg.options.Replace(" ", "").Split(';');
-      REGISTRY_ = TryExtractRegistry(options);
       client_ = new DockerClientConfiguration().CreateClient();   
-      ds_.Post($"Registry={REGISTRY_}", Constants.Operation.INFO);
-    }
-
-    private static string TryExtractRegistry(string[] options) {
-      foreach(string option in options) {
-        string[] opt_arr = option.Split("=");
-        if (opt_arr.Length <= 0) {
-          continue;
-        }
-        if (opt_arr[0] == "registry") {
-          return opt_arr[1];
-        }
-      }
-      return null;
     }
 
     protected override string GetDepositPath(Artifact artifact,
@@ -48,6 +28,7 @@ namespace Stockpile.Channels {
     protected override async Task DownloadArtifactsToDisk() {
       HashSet<string> ids = GetAllArtifactsInMemory();
       foreach (string id in ids) await ProcessImage(id);
+      ds_.Post("Completed", Constants.Operation.COMPLETED);
     }
     
     private async Task ProcessImage(string id) {
@@ -83,11 +64,18 @@ namespace Stockpile.Channels {
     private async Task PullImage(string image, string tag) {
       ds_.Post($"{image}:{tag}", Constants.Operation.DOWNLOAD);
       ImagesCreateParameters p = new ImagesCreateParameters(){
-        Repo = REGISTRY_,
         FromImage = image,
         Tag = tag
       };
-      await client_.Images.CreateImageAsync(p, null, new Progress<JSONMessage>());
+      Progress<JSONMessage> progress = new Progress<JSONMessage>((message) => {
+        if (message.Progress != null && message.Progress.Total != 0) {
+          long total = message.Progress.Total;
+          long current = message.Progress.Current;
+          double percent = 100 * ((double)current / total);
+          ds_.Post($"{image}:{tag}:{message.ID} {percent:F2}%", Constants.Operation.DOWNLOAD);
+        }
+      });
+      await client_.Images.CreateImageAsync(p, null, progress);
     }
 
     private async Task SaveImage(string id, string path) {
