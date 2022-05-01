@@ -65,6 +65,7 @@ namespace Stockpile.Channels {
       foreach (string id in package_list_) await TryInspectArtifact(id);
       /* Process Ids! */
       await DownloadArtifactsToDisk();
+      await OnComplete();
     }
 
     protected async Task TryInspectArtifact(string id) {
@@ -113,6 +114,8 @@ namespace Stockpile.Channels {
         CurrentTreeDepth = cur_tree_depth_
       });
     }
+
+    protected virtual Task OnComplete() { return Task.CompletedTask; }
 
     protected virtual async Task DownloadArtifactsToDisk() {
       /* Parallel, max 5 concurrent fetchers */

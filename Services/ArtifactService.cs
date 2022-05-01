@@ -52,6 +52,7 @@ namespace Stockpile.Services {
         "maven" => new Maven(config_, fetcher_config_),
         "git" => new Git(config_, fetcher_config_),
         "docker" => new DockerRegistry(config_, fetcher_config_),
+        "helm" => new Helm(config_, fetcher_config_),
         _ => throw new ArgumentException("type")
       };
     }

@@ -31,6 +31,24 @@
       }
     },
     {
+      "id": "helm",
+      "type": "helm",
+      "force": true,
+      "filters": [],
+      "threads": {
+        "parallel_pkg": 6,
+        "parallel_ver": 1
+      },
+      "input": "./Input/HELM.txt",
+      "deposits": {
+        "main": "./Output/helm/main/",
+        "delta": "./Output/helm/delta/"
+      },
+      "options": {
+        "containers_list": "./Output/containers.txt"
+      }
+    },
+    {
       "id": "maven",
       "type": "maven",
       "force": true,

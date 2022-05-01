@@ -23,4 +23,6 @@ stockpile blacklist --channelId npm --artifactId react --version 16.0.0
 | Nuget    | :heavy_check_mark: |
 | Npm      | :heavy_check_mark: |
 | Git      | :heavy_check_mark: |
+| Docker      | :heavy_check_mark: |
+| Helm Charts     | :heavy_check_mark: |
 | Maven    | :heavy_plus_sign:  |
