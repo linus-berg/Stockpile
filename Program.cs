@@ -35,6 +35,7 @@ namespace Stockpile {
     private static int RunStockpile(StockpileOptions options) {
       MainConfig config = GetConfigFile(options.config);
       config.staging = options.staging || config.staging;
+      config.only_metadata = options.only_metadata || config.only_metadata;
       List<ArtifactService> fetchers = config.channels
         .Select(fetcher => new ArtifactService(config, fetcher)).ToList();
       Task.WaitAll(fetchers.Select(a_s => a_s.Start()).ToArray());

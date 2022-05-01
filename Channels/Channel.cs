@@ -64,7 +64,9 @@ namespace Stockpile.Channels {
     public async Task Start() {
       foreach (string id in package_list_) await TryInspectArtifact(id);
       /* Process Ids! */
-      await DownloadArtifactsToDisk();
+      if (!main_config_.only_metadata) {
+        await DownloadArtifactsToDisk();
+      }
       await OnComplete();
     }
 
