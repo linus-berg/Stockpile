@@ -48,6 +48,7 @@ namespace Stockpile.Channels {
     private async Task ProcessVersions(Artifact artifact,
       HelmChartMetadata metadata) {
       foreach (HelmChartVersion hv in metadata.available_versions) {
+        ds_.Post($"{artifact.Name}:{hv.version}", Constants.Operation.INSPECT);
         HelmChartMetadata vm = await GetMetadata(artifact.Name, hv.version);
         ArtifactVersion version =
           artifact.AddVersionIfNotExists(vm.version, vm.content_url);
@@ -70,9 +71,16 @@ namespace Stockpile.Channels {
     }
 
     private async Task GetDependencies(HelmChartData data) {
-      if (data.dependencies == null) return;
-      foreach (HelmChartDependency chart in data.dependencies)
+      if (data?.dependencies == null) return;
+      foreach (HelmChartDependency chart in data.dependencies) {
+        Uri uri = new Uri(chart.repository);
+        Console.WriteLine($"{chart.name} - {chart.repository}");
+        if (uri.Scheme == "file" || 
+            string.IsNullOrEmpty(chart.artifacthub_repository_name)) {
+          continue;
+        }
         await TryInspectArtifact($"{chart.artifacthub_repository_name}/{chart.name}");
+      }
     }
 
     private async Task<HelmChartMetadata> GetMetadata(string id) {

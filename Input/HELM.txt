@@ -1,2 +1,1 @@
-traefik/traefik
-metallb/metallb
+cert-manager/cert-manager
