@@ -86,11 +86,7 @@ namespace Stockpile.Channels {
     }
     
     private static string GetTarName(string image, string tag) {
-      return $"{ReplaceInvalidChars(image)}_{ReplaceInvalidChars(tag)}.tgz";
-    }
-
-    private static string ReplaceInvalidChars(string input) {
-      return input.Replace("/", "_").Replace(".", "_");
+      return $"{image}:{tag}.tgz";
     }
   }
 }
