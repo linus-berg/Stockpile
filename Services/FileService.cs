@@ -41,7 +41,7 @@ namespace Stockpile.Services {
       string out_fp = GetMainFilePath(fp);
       string delta_fp = GetDeltaFilePath(fp);
       CreateDirectory(delta_fp);
-      File.Copy(out_fp, delta_fp);
+      File.CreateSymbolicLink(delta_fp, out_fp);
     }
   }
 }
