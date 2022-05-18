@@ -35,7 +35,7 @@ namespace Stockpile.Channels {
         await GetMetadata(artifact.Name);
       foreach (IPackageSearchMetadata version in versions) {
         string v = version.Identity.Version.ToString();
-        string u = NUGET_ + $"{artifact.Name}/{v}/{artifact.Name}.{v}.nupkg";
+        string u = NUGET_ + $"{artifact.Name}/{v}/{artifact.Name}.{v}.nupkg".ToLower();
         ArtifactVersion a_v = artifact.AddVersionIfNotExists(v, u);
         if (a_v.IsProcessed()) continue;
         await ProcessArtifactDependencies(version.DependencySets);
